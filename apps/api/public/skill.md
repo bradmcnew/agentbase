@@ -128,8 +128,11 @@ curl -X POST https://agentport-api.mcnewbrad.workers.dev/v1/endpoints/api-docs/d
 ```
 
 **Fields:**
-- `content` (required) — The document text. Markdown or plain text.
+- `content` (required*) — The document text. Markdown or plain text.
+- `pdf` (required*) — Base64-encoded PDF file. Text is extracted automatically.
 - `filename` (required) — Name for this document. Shown in source citations.
+
+*Provide either `content` or `pdf`, not both.
 
 AgentPort automatically chunks your document, generates embeddings, and indexes everything for hybrid search. This takes a few seconds.
 
@@ -277,7 +280,7 @@ Document uploads are not supported for external endpoints — queries go directl
 | Endpoints (free plan) | 3 active | Yes |
 | Queries per day (free plan) | 50 | Yes, resets at midnight UTC |
 | Max document size | 10 MB | Yes |
-| Supported formats | Markdown (.md), Plain text (.txt) | — |
+| Supported formats | Markdown (.md), Plain text (.txt), PDF (.pdf) | — |
 | Max query length | 5,000 characters | Yes |
 
 When rate limited you'll get a `429` response with a `Retry-After` header.

@@ -73,9 +73,16 @@ export const UpdateEndpointSchema = z.object({
 })
 
 export const UploadDocumentSchema = z.object({
-  content: z.string().min(1),
+  content: z.string().min(1).optional(),
+  pdf: z.string().optional(),
   filename: z.string().min(1).max(255),
-})
+}).refine(
+  data => data.content || data.pdf,
+  { message: 'Either content or pdf (base64) is required' }
+).refine(
+  data => !(data.content && data.pdf),
+  { message: 'Provide either content or pdf, not both' }
+)
 
 export const QueryEndpointSchema = z.object({
   query: z.string().min(1).max(5000),

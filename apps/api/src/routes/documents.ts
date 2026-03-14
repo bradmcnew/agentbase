@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { extractText } from 'unpdf'
 import { generateId } from '../utils/id'
 import { chunkText } from '../utils/chunker'
 import { createSearchClient } from '../services/azure-search'
@@ -35,8 +36,25 @@ app.post('/v1/endpoints/:slug/docs', resolveEndpoint as any, async (c) => {
   const openai = createOpenAIClient(c.env)
   const search = createSearchClient(c.env)
 
+  // Extract text from PDF or use provided content
+  let textContent = data.content
+  if (data.pdf) {
+    try {
+      const pdfBytes = Uint8Array.from(atob(data.pdf), c => c.charCodeAt(0))
+      const { text } = await extractText(pdfBytes, { mergePages: true })
+      textContent = text
+    } catch (err) {
+      return serviceError(c, ErrorCode.VALIDATION_ERROR, 'Failed to parse PDF. Ensure the file is a valid PDF.', err)
+    }
+  }
+
+  if (!textContent || textContent.trim().length === 0) {
+    return errorResponse(c, 400, ErrorCode.VALIDATION_ERROR,
+      'No text could be extracted. For scanned/image-only PDFs, convert to text first.')
+  }
+
   try {
-    const chunks = chunkText(data.content)
+    const chunks = chunkText(textContent)
     const docId = generateId()
 
     const allVectors: number[][] = []
