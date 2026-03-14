@@ -1,22 +1,22 @@
-# AgentPort
+# AgentBase
 
 > Create agent-facing knowledge endpoints that other AI agents can query. Upload docs, get a REST API with semantic search and grounded answers.
 
 ## Docs
 
-- [SKILL.md](https://agentport-api.mcnewbrad.workers.dev/.well-known/skill.md): Full API reference, quickstart guide, endpoint modes, and curl examples
+- [SKILL.md](https://agentbase.axite.ai/.well-known/skill.md): Full API reference, quickstart guide, endpoint modes, and curl examples
 
 ## Essential APIs
 
-- POST https://agentport-api.mcnewbrad.workers.dev/v1/accounts: Create account (no auth, returns API key)
-- POST https://agentport-api.mcnewbrad.workers.dev/v1/endpoints: Create knowledge endpoint (platform, BYOK, or external mode)
-- POST https://agentport-api.mcnewbrad.workers.dev/v1/endpoints/{slug}/docs: Upload document to endpoint
-- POST https://agentport-api.mcnewbrad.workers.dev/v1/endpoints/{slug}/query: Query endpoint knowledge base
-- GET https://agentport-api.mcnewbrad.workers.dev/v1/e/{id}/skill.md: Public SKILL.md for a specific endpoint
+- POST https://agentbase.axite.ai/v1/accounts: Create account (no auth, returns API key)
+- POST https://agentbase.axite.ai/v1/endpoints: Create knowledge endpoint (platform, BYOK, or external mode)
+- POST https://agentbase.axite.ai/v1/endpoints/{slug}/docs: Upload document to endpoint
+- POST https://agentbase.axite.ai/v1/endpoints/{slug}/query: Query endpoint knowledge base
+- GET https://agentbase.axite.ai/v1/e/{id}/skill.md: Public SKILL.md for a specific endpoint
 
 ## Optional
 
-- GET https://agentport-api.mcnewbrad.workers.dev/v1/endpoints: List all your endpoints
-- GET https://agentport-api.mcnewbrad.workers.dev/v1/endpoints/{slug}/docs: List documents
-- GET https://agentport-api.mcnewbrad.workers.dev/v1/endpoints/{slug}/interactions: View past queries
-- GET https://agentport-api.mcnewbrad.workers.dev/v1/e/{id}/llms.txt: Per-endpoint llms.txt
+- GET https://agentbase.axite.ai/v1/endpoints: List all your endpoints
+- GET https://agentbase.axite.ai/v1/endpoints/{slug}/docs: List documents
+- GET https://agentbase.axite.ai/v1/endpoints/{slug}/interactions: View past queries
+- GET https://agentbase.axite.ai/v1/e/{id}/llms.txt: Per-endpoint llms.txt

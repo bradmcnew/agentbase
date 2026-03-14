@@ -23,8 +23,8 @@ cd apps/api && pnpm db:migrate:remote  # Apply to production D1
 cd apps/api && CLOUDFLARE_API_TOKEN=... npx wrangler deploy
 
 # Test endpoints
-curl https://agentport-api.mcnewbrad.workers.dev/health
-curl https://agentport-api.mcnewbrad.workers.dev/.well-known/skill.md
+curl https://agentbase.axite.ai/health
+curl https://agentbase.axite.ai/.well-known/skill.md
 ```
 
 ## Architecture
@@ -109,6 +109,6 @@ UNKEY_ROOT_KEY (Unkey root key for API key management)
 UNKEY_API_ID (Unkey API ID)
 ```
 
-Production URL: `https://agentport-api.mcnewbrad.workers.dev`
+Production URL: `https://agentbase.axite.ai`
 D1 database ID: `7e9dea6e-9a9f-4667-bb64-ab3ee46ef7f7`
 Cloudflare API token needed for deploys (set as `CLOUDFLARE_API_TOKEN` env var).
