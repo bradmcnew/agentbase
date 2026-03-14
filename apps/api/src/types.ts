@@ -49,6 +49,7 @@ export const QueryEndpointSchema = z.object({
 
 export interface Env {
   DB: D1Database
+  ASSETS: Fetcher
   AZURE_SEARCH_ENDPOINT: string
   AZURE_SEARCH_API_KEY: string
   AZURE_OPENAI_ENDPOINT: string

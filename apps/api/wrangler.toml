@@ -3,6 +3,11 @@ main = "src/index.ts"
 compatibility_date = "2025-03-13"
 compatibility_flags = ["nodejs_compat"]
 
+[assets]
+directory = "./public"
+binding = "ASSETS"
+not_found_handling = "none"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "agentport-db"

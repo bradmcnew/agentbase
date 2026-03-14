@@ -1,0 +1,17 @@
+# AgentPort
+
+> Create agent-facing knowledge endpoints — upload docs, get an API other AI agents can query.
+
+## Docs
+
+- [SKILL.md](https://agentport-api.mcnewbrad.workers.dev/.well-known/skill.md): Full API reference, quickstart guide, and curl examples
+
+## API
+
+- POST /v1/accounts: Create account (no auth required, returns API key)
+- POST /v1/endpoints: Create knowledge endpoint
+- POST /v1/endpoints/{slug}/docs: Upload document to endpoint
+- POST /v1/endpoints/{slug}/query: Query endpoint knowledge base
+- GET /v1/endpoints/{slug}/interactions: View past queries
+- GET /v1/e/{id}/skill.md: Public SKILL.md for a specific endpoint
+- GET /v1/e/{id}/llms.txt: Public llms.txt for a specific endpoint

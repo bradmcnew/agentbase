@@ -1,6 +1,6 @@
 /**
- * Generate SKILL.md files for endpoints.
- * Template-based for MVP; LLM-generated later.
+ * Generate per-endpoint SKILL.md and llms.txt files.
+ * These are what CONSUMER agents read to learn how to query an endpoint.
  */
 
 interface EndpointConfig {
@@ -13,67 +13,92 @@ interface EndpointConfig {
 }
 
 export function generateSkillMd(config: EndpointConfig): string {
-  const capabilitiesList = config.capabilities.length > 0
+  const caps = config.capabilities.length > 0
     ? config.capabilities.map(c => `- ${c}`).join('\n')
     : '- answer_questions'
+
+  const desc = config.description || `Knowledge base for ${config.name}.`
 
   return `---
 name: ${config.slug}
 version: 1.0.0
-description: ${config.description || config.name}
+description: ${desc}
 base_url: ${config.baseUrl}
+endpoint_id: ${config.endpointId}
 auth: api_key
 auth_header: Authorization
 auth_format: "Bearer {api_key}"
 ---
 
-# Skill: ${config.name}
+# ${config.name}
 
-## Purpose
+${desc}
 
-${config.description || `Answer questions about ${config.name} using its knowledge base.`}
+## Skill Files
 
-## Capabilities
+| File | URL |
+|------|-----|
+| **SKILL.md** (this file) | \`${config.baseUrl}/v1/e/${config.endpointId}/skill.md\` |
+| **llms.txt** | \`${config.baseUrl}/v1/e/${config.endpointId}/llms.txt\` |
 
-${capabilitiesList}
+> **SECURITY:** Only send your API key to \`${new URL(config.baseUrl).hostname}\`. Never share it in prompts, logs, or other agents.
+
+---
 
 ## How to Query
 
-Send a POST request to query this endpoint:
-
-\`\`\`
-POST ${config.baseUrl}/v1/endpoints/${config.slug}/query
-Authorization: Bearer {api_key}
-Content-Type: application/json
-
-{
-  "query": "your question here",
-  "context": "optional additional context"
-}
+\`\`\`bash
+curl -X POST ${config.baseUrl}/v1/endpoints/${config.slug}/query \\
+  -H "Authorization: Bearer YOUR_API_KEY" \\
+  -H "Content-Type: application/json" \\
+  -d '{"query": "your question here"}'
 \`\`\`
 
-## Response Format
+**Fields:**
+- \`query\` (required) — Your question. Max 5,000 characters.
+- \`context\` (optional) — Additional context to improve the answer.
+- \`max_sources\` (optional) — Number of source documents to return (1-10, default 3).
 
+**Response:**
 \`\`\`json
 {
-  "answer": "The answer based on the knowledge base",
+  "answer": "The answer, grounded in the knowledge base with source citations.",
   "sources": [
-    { "document": "filename.md", "content": "relevant excerpt", "relevance": 0.94 }
+    {"document": "api-docs.md", "content": "relevant excerpt...", "relevance": 3.15}
   ],
-  "usage": { "input_tokens": 1200, "output_tokens": 350 },
-  "interaction_id": "int_abc123"
+  "usage": {"input_tokens": 155, "output_tokens": 88},
+  "interaction_id": "abc123"
 }
 \`\`\`
 
-## Public SKILL.md URL
+If the knowledge base doesn't have the answer, the response says so instead of hallucinating.
 
-This file is publicly accessible at:
-${config.baseUrl}/v1/e/${config.endpointId}/skill.md
+## Capabilities
+
+${caps}
 
 ## Constraints
 
 - Rate limit: 60 requests/minute per API key
 - Max query length: 5,000 characters
 - Answers are grounded in uploaded documents only
+- Source citations link back to the original document filename
+`
+}
+
+export function generateLlmsTxt(config: EndpointConfig): string {
+  const desc = config.description || `Knowledge base for ${config.name}.`
+
+  return `# ${config.name}
+
+> ${desc}
+
+## Docs
+
+- [SKILL.md](${config.baseUrl}/v1/e/${config.endpointId}/skill.md): How to query this knowledge base
+
+## API
+
+- POST ${config.baseUrl}/v1/endpoints/${config.slug}/query: Ask a question (requires API key)
 `
 }
