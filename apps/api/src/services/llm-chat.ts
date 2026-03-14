@@ -8,6 +8,7 @@
 
 import { createOpenAIClient } from './azure-openai'
 import type { EndpointRow } from '../middleware/resolve-endpoint'
+import { ENDPOINT_MODE } from '../types'
 import type { Env } from '../types'
 
 export interface ChatResult {
@@ -24,7 +25,7 @@ export async function chatWithProvider(
   context: string,
   query: string
 ): Promise<ChatResult> {
-  if (endpoint.mode === 'byok' && endpoint.llmApiKey) {
+  if (endpoint.mode === ENDPOINT_MODE.BYOK && endpoint.llmApiKey) {
     if (endpoint.llmProvider === 'anthropic') {
       return anthropicChat(endpoint.llmApiKey, endpoint.llmModel || 'claude-sonnet-4-20250514', systemPrompt, context, query)
     }

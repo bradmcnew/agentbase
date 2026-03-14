@@ -4,8 +4,6 @@
  * Only the SHA-256 hash is stored; the raw key is returned once at creation.
  */
 
-export { generateId } from '../utils/id'
-
 export async function generateApiKey(): Promise<{ raw: string; hash: string; prefix: string }> {
   const bytes = new Uint8Array(32)
   crypto.getRandomValues(bytes)

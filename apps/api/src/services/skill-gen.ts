@@ -3,6 +3,8 @@
  * These are what CONSUMER agents read to learn how to query an endpoint.
  */
 
+import { ENDPOINT_MODE } from '../types'
+
 interface EndpointConfig {
   slug: string
   name: string
@@ -18,17 +20,18 @@ export function generateSkillMd(config: EndpointConfig): string {
     ? config.capabilities.map(c => `- ${c}`).join('\n')
     : '- answer_questions'
 
-  const desc = config.description || `Knowledge base for ${config.name}.`
+  const desc = config.description || `Knowledge base endpoint for ${config.name}. Query via REST API with semantic search. Returns answers grounded in uploaded documents.`
 
   return `---
 name: ${config.slug}
-version: 1.0.0
 description: ${desc}
-base_url: ${config.baseUrl}
-endpoint_id: ${config.endpointId}
-auth: api_key
-auth_header: Authorization
-auth_format: "Bearer {api_key}"
+metadata:
+  version: "1.0.0"
+  base_url: ${config.baseUrl}
+  endpoint_id: ${config.endpointId}
+  auth_type: api_key
+  auth_header: Authorization
+  auth_format: "Bearer {api_key}"
 ---
 
 # ${config.name}
@@ -73,7 +76,7 @@ curl -X POST ${config.baseUrl}/v1/endpoints/${config.slug}/query \\
 \`\`\`
 
 If the answer is not in the knowledge base, the response says so instead of hallucinating.
-${config.mode === 'external' ? '\nThis endpoint is powered by the company\'s own agent.' : ''}
+${config.mode === ENDPOINT_MODE.EXTERNAL ? '\nThis endpoint is powered by the company\'s own agent.\n' : ''}
 ## Capabilities
 
 ${caps}
@@ -81,7 +84,7 @@ ${caps}
 ## Constraints
 
 - Rate limit: 60 requests/minute per API key
-- Max query length: 5,000 characters${config.mode !== 'external' ? '\n- Answers are grounded in uploaded documents only\n- Source citations link back to the original document filename' : ''}
+- Max query length: 5,000 characters${config.mode !== ENDPOINT_MODE.EXTERNAL ? '\n- Answers are grounded in uploaded documents only\n- Source citations link back to the original document filename' : ''}
 `
 }
 

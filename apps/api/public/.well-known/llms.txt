@@ -1,17 +1,22 @@
 # AgentPort
 
-> Create agent-facing knowledge endpoints — upload docs, get an API other AI agents can query.
+> Create agent-facing knowledge endpoints that other AI agents can query. Upload docs, get a REST API with semantic search and grounded answers.
 
 ## Docs
 
-- [SKILL.md](https://agentport-api.mcnewbrad.workers.dev/.well-known/skill.md): Full API reference, quickstart guide, and curl examples
+- [SKILL.md](https://agentport-api.mcnewbrad.workers.dev/.well-known/skill.md): Full API reference, quickstart guide, endpoint modes, and curl examples
 
-## API
+## Essential APIs
 
-- POST /v1/accounts: Create account (no auth required, returns API key)
-- POST /v1/endpoints: Create knowledge endpoint
-- POST /v1/endpoints/{slug}/docs: Upload document to endpoint
-- POST /v1/endpoints/{slug}/query: Query endpoint knowledge base
-- GET /v1/endpoints/{slug}/interactions: View past queries
-- GET /v1/e/{id}/skill.md: Public SKILL.md for a specific endpoint
-- GET /v1/e/{id}/llms.txt: Public llms.txt for a specific endpoint
+- POST https://agentport-api.mcnewbrad.workers.dev/v1/accounts: Create account (no auth, returns API key)
+- POST https://agentport-api.mcnewbrad.workers.dev/v1/endpoints: Create knowledge endpoint (platform, BYOK, or external mode)
+- POST https://agentport-api.mcnewbrad.workers.dev/v1/endpoints/{slug}/docs: Upload document to endpoint
+- POST https://agentport-api.mcnewbrad.workers.dev/v1/endpoints/{slug}/query: Query endpoint knowledge base
+- GET https://agentport-api.mcnewbrad.workers.dev/v1/e/{id}/skill.md: Public SKILL.md for a specific endpoint
+
+## Optional
+
+- GET https://agentport-api.mcnewbrad.workers.dev/v1/endpoints: List all your endpoints
+- GET https://agentport-api.mcnewbrad.workers.dev/v1/endpoints/{slug}/docs: List documents
+- GET https://agentport-api.mcnewbrad.workers.dev/v1/endpoints/{slug}/interactions: View past queries
+- GET https://agentport-api.mcnewbrad.workers.dev/v1/e/{id}/llms.txt: Per-endpoint llms.txt

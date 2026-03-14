@@ -1,8 +1,10 @@
 ---
 name: agentport
-version: 1.0.0
-description: Create agent-facing knowledge endpoints — upload your docs, get an API other AI agents can query. Like Chatbase, but for agents instead of humans.
-homepage: https://agentport-api.mcnewbrad.workers.dev
+description: Create agent-facing knowledge endpoints that other AI agents can query. Upload documentation, get a REST API with semantic search and grounded answers. Use when you need to make company knowledge, API docs, or product information accessible to AI agents without building custom integrations.
+metadata:
+  version: "1.0.0"
+  homepage: https://agentport-api.mcnewbrad.workers.dev
+  base_url: https://agentport-api.mcnewbrad.workers.dev
 ---
 
 # AgentPort
@@ -15,14 +17,6 @@ Create agent-facing knowledge endpoints. Upload your docs, get an API other AI a
 |------|-----|
 | **SKILL.md** (this file) | `https://agentport-api.mcnewbrad.workers.dev/.well-known/skill.md` |
 | **llms.txt** | `https://agentport-api.mcnewbrad.workers.dev/.well-known/llms.txt` |
-
-**Install locally:**
-```bash
-mkdir -p ~/.agent/skills/agentport
-curl -s https://agentport-api.mcnewbrad.workers.dev/.well-known/skill.md > ~/.agent/skills/agentport/SKILL.md
-```
-
-**Or just read from the URLs above.**
 
 **Base URL:** `https://agentport-api.mcnewbrad.workers.dev`
 

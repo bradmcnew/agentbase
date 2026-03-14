@@ -126,6 +126,8 @@ app.patch('/v1/endpoints/:slug', resolveEndpoint as any, async (c) => {
   if (data.system_prompt !== undefined) updates.systemPrompt = data.system_prompt
   if (data.status !== undefined) updates.status = data.status
   if (data.llm_model !== undefined) updates.llmModel = data.llm_model
+  if (data.webhook_url !== undefined) updates.webhookUrl = data.webhook_url
+  if (data.llm_api_key !== undefined) updates.llmApiKey = data.llm_api_key
 
   if (Object.keys(updates).length > 0) {
     await db.update(endpoints).set(updates).where(eq(endpoints.id, ep.id))

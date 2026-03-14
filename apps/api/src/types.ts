@@ -40,16 +40,16 @@ export const CreateEndpointSchema = z.object({
   llm_api_key: z.string().optional(),
   llm_model: z.string().optional(),
 }).superRefine((data, ctx) => {
-  if (data.mode === 'external' && !data.webhook_url) {
+  if (data.mode === ENDPOINT_MODE.EXTERNAL && !data.webhook_url) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'webhook_url is required for external mode', path: ['webhook_url'] })
   }
-  if (data.mode === 'external' && data.webhook_url && !data.webhook_url.startsWith('https://')) {
+  if (data.mode === ENDPOINT_MODE.EXTERNAL && data.webhook_url && !data.webhook_url.startsWith('https://')) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'webhook_url must use HTTPS', path: ['webhook_url'] })
   }
-  if (data.mode === 'byok' && !data.llm_provider) {
+  if (data.mode === ENDPOINT_MODE.BYOK && !data.llm_provider) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'llm_provider is required for byok mode', path: ['llm_provider'] })
   }
-  if (data.mode === 'byok' && !data.llm_api_key) {
+  if (data.mode === ENDPOINT_MODE.BYOK && !data.llm_api_key) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'llm_api_key is required for byok mode', path: ['llm_api_key'] })
   }
 })
@@ -61,6 +61,8 @@ export const UpdateEndpointSchema = z.object({
   system_prompt: z.string().max(5000).optional(),
   status: z.enum([ENDPOINT_STATUS.ACTIVE, ENDPOINT_STATUS.PAUSED]).optional(),
   llm_model: z.string().optional(),
+  webhook_url: z.string().url().optional(),
+  llm_api_key: z.string().optional(),
 })
 
 export const UploadDocumentSchema = z.object({
