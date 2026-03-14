@@ -2,7 +2,7 @@ import { z } from 'zod'
 import { DrizzleD1Database } from 'drizzle-orm/d1'
 import type { EndpointRow } from './middleware/resolve-endpoint'
 
-// --- Endpoint status ---
+// --- Endpoint constants ---
 
 export const ENDPOINT_STATUS = {
   ACTIVE: 'active',
@@ -10,7 +10,16 @@ export const ENDPOINT_STATUS = {
   ARCHIVED: 'archived',
 } as const
 
+export const ENDPOINT_MODE = {
+  PLATFORM: 'platform',
+  BYOK: 'byok',
+  EXTERNAL: 'external',
+} as const
+
+export const PLATFORM_MODELS = ['gpt-5-mini', 'gpt-5-nano'] as const
+
 export type EndpointStatus = typeof ENDPOINT_STATUS[keyof typeof ENDPOINT_STATUS]
+export type EndpointMode = typeof ENDPOINT_MODE[keyof typeof ENDPOINT_MODE]
 
 // --- Request schemas ---
 
@@ -24,6 +33,25 @@ export const CreateEndpointSchema = z.object({
   description: z.string().max(2000).optional(),
   capabilities: z.array(z.string()).default([]),
   system_prompt: z.string().max(5000).optional(),
+  // Mode configuration
+  mode: z.enum([ENDPOINT_MODE.PLATFORM, ENDPOINT_MODE.BYOK, ENDPOINT_MODE.EXTERNAL]).default(ENDPOINT_MODE.PLATFORM),
+  webhook_url: z.string().url().optional(),
+  llm_provider: z.enum(['openai', 'anthropic']).optional(),
+  llm_api_key: z.string().optional(),
+  llm_model: z.string().optional(),
+}).superRefine((data, ctx) => {
+  if (data.mode === 'external' && !data.webhook_url) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'webhook_url is required for external mode', path: ['webhook_url'] })
+  }
+  if (data.mode === 'external' && data.webhook_url && !data.webhook_url.startsWith('https://')) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'webhook_url must use HTTPS', path: ['webhook_url'] })
+  }
+  if (data.mode === 'byok' && !data.llm_provider) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'llm_provider is required for byok mode', path: ['llm_provider'] })
+  }
+  if (data.mode === 'byok' && !data.llm_api_key) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'llm_api_key is required for byok mode', path: ['llm_api_key'] })
+  }
 })
 
 export const UpdateEndpointSchema = z.object({
@@ -32,6 +60,7 @@ export const UpdateEndpointSchema = z.object({
   capabilities: z.array(z.string()).optional(),
   system_prompt: z.string().max(5000).optional(),
   status: z.enum([ENDPOINT_STATUS.ACTIVE, ENDPOINT_STATUS.PAUSED]).optional(),
+  llm_model: z.string().optional(),
 })
 
 export const UploadDocumentSchema = z.object({

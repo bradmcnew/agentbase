@@ -29,7 +29,12 @@ export const endpoints = sqliteTable('endpoints', {
   slug: text('slug').notNull(),
   name: text('name').notNull(),
   description: text('description'),
-  azureIndexName: text('azure_index_name').notNull(),  // Azure AI Search index name
+  azureIndexName: text('azure_index_name'),  // null for external mode
+  mode: text('mode').notNull().default('platform'),  // platform | byok | external
+  webhookUrl: text('webhook_url'),            // external mode
+  llmProvider: text('llm_provider'),          // byok mode: openai | anthropic
+  llmApiKey: text('llm_api_key'),             // byok mode: customer's key
+  llmModel: text('llm_model'),               // platform/byok: model name
   capabilities: text('capabilities').notNull().default('[]'),
   systemPrompt: text('system_prompt'),
   skillMd: text('skill_md'),

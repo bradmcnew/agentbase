@@ -4,17 +4,20 @@ import { interactions } from '../db/schema'
 import { generateId } from '../utils/id'
 import { createSearchClient } from '../services/azure-search'
 import { createOpenAIClient } from '../services/azure-openai'
+import { chatWithProvider } from '../services/llm-chat'
 import { authMiddleware } from '../middleware/auth'
 import { resolveEndpoint } from '../middleware/resolve-endpoint'
 import { errorResponse, serviceError, ErrorCode } from '../utils/errors'
 import { parseBody, safeJsonParse, parseIntParam } from '../utils/validate'
-import { QueryEndpointSchema, ENDPOINT_STATUS } from '../types'
+import { QueryEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE } from '../types'
 import type { Env, AppVariables } from '../types'
 
 const SYSTEM_PROMPT = `You are a helpful assistant that answers questions based on the provided documents.
 Use ONLY the information from the documents below to answer.
 If the answer is not found in the documents, say "I don't have information about that in the knowledge base."
 Be concise and accurate. Cite which document the information comes from when possible.`
+
+const WEBHOOK_TIMEOUT_MS = 30_000
 
 const app = new Hono<{ Bindings: Env; Variables: AppVariables }>()
 
@@ -32,55 +35,120 @@ app.post('/v1/endpoints/:slug/query', resolveEndpoint as any, async (c) => {
   const data = await parseBody(c, QueryEndpointSchema)
   if (data instanceof Response) return data
 
-  const openai = createOpenAIClient(c.env)
-  const search = createSearchClient(c.env)
-
   try {
-    const queryVector = await openai.embed(data.query)
-    const searchResults = await search.search(ep.azureIndexName, data.query, queryVector, data.max_sources)
+    let answer: string
+    let sources: Array<{ document: string; content: string; relevance: number }> = []
+    let promptTokens = 0
+    let completionTokens = 0
 
-    if (searchResults.length === 0) {
-      return c.json({
-        answer: 'No relevant documents found. Please upload documents to this endpoint first.',
-        sources: [], usage: { input_tokens: 0, output_tokens: 0 },
-        interaction_id: generateId(),
-      })
+    if (ep.mode === ENDPOINT_MODE.EXTERNAL) {
+      // ---- EXTERNAL MODE: forward to webhook ----
+      if (!ep.webhookUrl) {
+        return errorResponse(c, 422, ErrorCode.QUERY_ERROR, 'External endpoint has no webhook URL configured')
+      }
+
+      const controller = new AbortController()
+      const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS)
+
+      try {
+        const res = await fetch(ep.webhookUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: data.query, context: data.context }),
+          signal: controller.signal,
+        })
+        clearTimeout(timeout)
+
+        if (!res.ok) {
+          const body = await res.text()
+          throw new Error(`Webhook returned ${res.status}: ${body}`)
+        }
+
+        const webhookData = await res.json() as {
+          answer?: string
+          sources?: Array<{ document: string; content: string; relevance?: number }>
+          usage?: { input_tokens?: number; output_tokens?: number }
+        }
+
+        answer = webhookData.answer || ''
+        sources = (webhookData.sources || []).map(s => ({
+          document: s.document, content: s.content, relevance: s.relevance || 0,
+        }))
+        promptTokens = webhookData.usage?.input_tokens || 0
+        completionTokens = webhookData.usage?.output_tokens || 0
+      } catch (err) {
+        clearTimeout(timeout)
+        if (err instanceof Error && err.name === 'AbortError') {
+          throw new Error('Webhook timed out after 30 seconds')
+        }
+        throw err
+      }
+
+    } else {
+      // ---- PLATFORM / BYOK MODE: RAG pipeline ----
+      if (!ep.azureIndexName) {
+        return errorResponse(c, 422, ErrorCode.QUERY_ERROR, 'Endpoint has no search index')
+      }
+
+      const openai = createOpenAIClient(c.env)
+      const search = createSearchClient(c.env)
+
+      // 1. Embed the query (always our Azure embedding)
+      const queryVector = await openai.embed(data.query)
+
+      // 2. Hybrid search (BM25 + vector + semantic reranking)
+      const searchResults = await search.search(ep.azureIndexName, data.query, queryVector, data.max_sources)
+
+      if (searchResults.length === 0) {
+        const interactionId = generateId()
+        return c.json({
+          answer: 'No relevant documents found. Please upload documents to this endpoint first.',
+          sources: [], usage: { input_tokens: 0, output_tokens: 0 },
+          interaction_id: interactionId,
+        })
+      }
+
+      // 3. Build context from retrieved chunks
+      const context = searchResults
+        .map((r, i) => `[Source ${i + 1}: ${r.filename}]\n${r.content}`)
+        .join('\n\n---\n\n')
+
+      // 4. Generate answer — routes to correct provider based on mode
+      const systemPrompt = ep.systemPrompt || SYSTEM_PROMPT
+      const queryText = data.context
+        ? `Additional context: ${data.context}\n\nQuestion: ${data.query}`
+        : data.query
+
+      const llmResult = await chatWithProvider(ep, c.env, systemPrompt, context, queryText)
+
+      answer = llmResult.answer
+      sources = searchResults.map(r => ({
+        document: r.filename,
+        content: r.content.slice(0, 200) + (r.content.length > 200 ? '...' : ''),
+        relevance: r.score,
+      }))
+      promptTokens = llmResult.promptTokens
+      completionTokens = llmResult.completionTokens
     }
 
-    const context = searchResults
-      .map((r, i) => `[Source ${i + 1}: ${r.filename}]\n${r.content}`)
-      .join('\n\n---\n\n')
-
-    const systemPrompt = ep.systemPrompt || SYSTEM_PROMPT
-    const queryText = data.context
-      ? `Additional context: ${data.context}\n\nQuestion: ${data.query}`
-      : data.query
-
-    const llmResult = await openai.chat(systemPrompt, context, queryText)
     const latencyMs = Date.now() - startTime
-
-    const sources = searchResults.map(r => ({
-      document: r.filename,
-      content: r.content.slice(0, 200) + (r.content.length > 200 ? '...' : ''),
-      relevance: r.score,
-    }))
-
     const interactionId = generateId()
     const db = c.get('db')
 
+    // Log interaction (fire and forget)
     c.executionCtx.waitUntil(
       db.insert(interactions).values({
         id: interactionId, endpointId: ep.id,
-        query: data.query, response: llmResult.answer,
+        query: data.query, response: answer,
         sources: JSON.stringify(sources),
-        tokensInput: llmResult.promptTokens, tokensOutput: llmResult.completionTokens,
+        tokensInput: promptTokens, tokensOutput: completionTokens,
         latencyMs,
       })
     )
 
     return c.json({
-      answer: llmResult.answer, sources,
-      usage: { input_tokens: llmResult.promptTokens, output_tokens: llmResult.completionTokens },
+      answer, sources,
+      usage: { input_tokens: promptTokens, output_tokens: completionTokens },
       interaction_id: interactionId,
     })
   } catch (err) {

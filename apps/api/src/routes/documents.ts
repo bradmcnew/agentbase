@@ -5,9 +5,9 @@ import { createSearchClient } from '../services/azure-search'
 import { createOpenAIClient } from '../services/azure-openai'
 import { authMiddleware } from '../middleware/auth'
 import { resolveEndpoint } from '../middleware/resolve-endpoint'
-import { serviceError, ErrorCode } from '../utils/errors'
+import { errorResponse, serviceError, ErrorCode } from '../utils/errors'
 import { parseBody } from '../utils/validate'
-import { UploadDocumentSchema } from '../types'
+import { UploadDocumentSchema, ENDPOINT_MODE } from '../types'
 import type { Env, AppVariables } from '../types'
 
 const EMBED_BATCH_SIZE = 16
@@ -22,6 +22,16 @@ app.post('/v1/endpoints/:slug/docs', resolveEndpoint as any, async (c) => {
   if (data instanceof Response) return data
 
   const ep = c.get('endpoint')
+
+  if (ep.mode === ENDPOINT_MODE.EXTERNAL) {
+    return errorResponse(c, 400, ErrorCode.VALIDATION_ERROR,
+      'External endpoints don\'t support document uploads. Queries are forwarded to your agent.')
+  }
+
+  if (!ep.azureIndexName) {
+    return errorResponse(c, 422, ErrorCode.SEARCH_ERROR, 'Endpoint has no search index')
+  }
+
   const openai = createOpenAIClient(c.env)
   const search = createSearchClient(c.env)
 
@@ -61,6 +71,11 @@ app.post('/v1/endpoints/:slug/docs', resolveEndpoint as any, async (c) => {
 // List documents for endpoint
 app.get('/v1/endpoints/:slug/docs', resolveEndpoint as any, async (c) => {
   const ep = c.get('endpoint')
+
+  if (!ep.azureIndexName) {
+    return c.json({ documents: [] })
+  }
+
   const search = createSearchClient(c.env)
 
   try {

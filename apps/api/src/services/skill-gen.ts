@@ -10,6 +10,7 @@ interface EndpointConfig {
   capabilities: string[]
   baseUrl: string
   endpointId: string
+  mode?: string  // 'platform' | 'byok' | 'external'
 }
 
 export function generateSkillMd(config: EndpointConfig): string {
@@ -71,8 +72,8 @@ curl -X POST ${config.baseUrl}/v1/endpoints/${config.slug}/query \\
 }
 \`\`\`
 
-If the knowledge base doesn't have the answer, the response says so instead of hallucinating.
-
+If the answer is not in the knowledge base, the response says so instead of hallucinating.
+${config.mode === 'external' ? '\nThis endpoint is powered by the company\'s own agent.' : ''}
 ## Capabilities
 
 ${caps}
@@ -80,9 +81,7 @@ ${caps}
 ## Constraints
 
 - Rate limit: 60 requests/minute per API key
-- Max query length: 5,000 characters
-- Answers are grounded in uploaded documents only
-- Source citations link back to the original document filename
+- Max query length: 5,000 characters${config.mode !== 'external' ? '\n- Answers are grounded in uploaded documents only\n- Source citations link back to the original document filename' : ''}
 `
 }
 

@@ -49,9 +49,10 @@ export class AzureOpenAIClient {
     return data.data.sort((a, b) => a.index - b.index).map(d => d.embedding)
   }
 
-  /** Generate chat completion with context */
-  async chat(systemPrompt: string, context: string, query: string): Promise<{ answer: string; promptTokens: number; completionTokens: number }> {
-    const url = `${this.endpoint}/openai/deployments/${this.chatDeployment}/chat/completions?api-version=${API_VERSION}`
+  /** Generate chat completion with context. modelOverride selects a different Azure deployment. */
+  async chat(systemPrompt: string, context: string, query: string, modelOverride?: string): Promise<{ answer: string; promptTokens: number; completionTokens: number }> {
+    const deployment = modelOverride || this.chatDeployment
+    const url = `${this.endpoint}/openai/deployments/${deployment}/chat/completions?api-version=${API_VERSION}`
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'api-key': this.apiKey, 'Content-Type': 'application/json' },

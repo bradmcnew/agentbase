@@ -8,7 +8,7 @@ import { authMiddleware } from '../middleware/auth'
 import { resolveEndpoint } from '../middleware/resolve-endpoint'
 import { errorResponse, serviceError, ErrorCode } from '../utils/errors'
 import { parseBody, safeJsonParse } from '../utils/validate'
-import { CreateEndpointSchema, UpdateEndpointSchema, ENDPOINT_STATUS } from '../types'
+import { CreateEndpointSchema, UpdateEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE } from '../types'
 import type { Env, AppVariables } from '../types'
 
 const app = new Hono<{ Bindings: Env; Variables: AppVariables }>()
@@ -33,33 +33,46 @@ app.post('/v1/endpoints', async (c) => {
     return errorResponse(c, 409, ErrorCode.CONFLICT, `Endpoint with slug "${data.slug}" already exists`)
   }
 
-  const search = createSearchClient(c.env)
-  const azureIndexName = AzureSearchClient.indexName(auth.accountId, data.slug)
-
-  try {
-    await search.createIndex(azureIndexName)
-  } catch (err) {
-    return serviceError(c, ErrorCode.SEARCH_ERROR, 'Failed to create search index. Please try again.', err)
-  }
-
   const endpointId = generateId()
   const baseUrl = new URL(c.req.url).origin
+  const mode = data.mode || ENDPOINT_MODE.PLATFORM
+
+  // Create Azure Search index for platform and byok modes (not external)
+  let azureIndexName: string | null = null
+  if (mode !== ENDPOINT_MODE.EXTERNAL) {
+    const search = createSearchClient(c.env)
+    azureIndexName = AzureSearchClient.indexName(auth.accountId, data.slug)
+    try {
+      await search.createIndex(azureIndexName)
+    } catch (err) {
+      return serviceError(c, ErrorCode.SEARCH_ERROR, 'Failed to create search index. Please try again.', err)
+    }
+  }
+
   const skillMd = generateSkillMd({
     slug: data.slug, name: data.name, description: data.description,
-    capabilities: data.capabilities ?? [], baseUrl, endpointId,
+    capabilities: data.capabilities ?? [], baseUrl, endpointId, mode,
   })
 
   await db.insert(endpoints).values({
     id: endpointId, accountId: auth.accountId, slug: data.slug,
-    name: data.name, description: data.description || null, azureIndexName,
-    capabilities: JSON.stringify(data.capabilities),
+    name: data.name, description: data.description || null,
+    azureIndexName: azureIndexName || '',  // empty string for external (column is NOT NULL in original migration)
+    mode,
+    webhookUrl: data.webhook_url || null,
+    llmProvider: data.llm_provider || null,
+    llmApiKey: data.llm_api_key || null,
+    llmModel: data.llm_model || null,
+    capabilities: JSON.stringify(data.capabilities ?? []),
     systemPrompt: data.system_prompt || null, skillMd,
   })
 
   return c.json({
     endpoint: {
       id: endpointId, slug: data.slug, name: data.name,
-      description: data.description || null, capabilities: data.capabilities,
+      description: data.description || null,
+      capabilities: data.capabilities ?? [],
+      mode,
       status: ENDPOINT_STATUS.ACTIVE,
       skill_md_url: `${baseUrl}/v1/e/${endpointId}/skill.md`,
       created_at: new Date().toISOString(),
@@ -92,6 +105,7 @@ app.get('/v1/endpoints/:slug', resolveEndpoint as any, async (c) => {
     endpoint: {
       id: ep.id, slug: ep.slug, name: ep.name, description: ep.description,
       capabilities: safeJsonParse(ep.capabilities, []),
+      mode: ep.mode, llm_model: ep.llmModel,
       status: ep.status, created_at: ep.createdAt,
     },
   })
@@ -111,6 +125,7 @@ app.patch('/v1/endpoints/:slug', resolveEndpoint as any, async (c) => {
   if (data.capabilities !== undefined) updates.capabilities = JSON.stringify(data.capabilities)
   if (data.system_prompt !== undefined) updates.systemPrompt = data.system_prompt
   if (data.status !== undefined) updates.status = data.status
+  if (data.llm_model !== undefined) updates.llmModel = data.llm_model
 
   if (Object.keys(updates).length > 0) {
     await db.update(endpoints).set(updates).where(eq(endpoints.id, ep.id))
@@ -127,12 +142,14 @@ app.delete('/v1/endpoints/:slug', resolveEndpoint as any, async (c) => {
 
   await db.update(endpoints).set({ status: ENDPOINT_STATUS.ARCHIVED }).where(eq(endpoints.id, ep.id))
 
-  // Clean up Azure Search index (fire and forget — don't block the response)
-  c.executionCtx.waitUntil(
-    search.deleteIndex(ep.azureIndexName).catch(err => {
-      console.error('Failed to delete Azure index:', ep.azureIndexName, err)
-    })
-  )
+  // Clean up Azure Search index if it exists (not for external mode)
+  if (ep.azureIndexName) {
+    c.executionCtx.waitUntil(
+      search.deleteIndex(ep.azureIndexName).catch(err => {
+        console.error('Failed to delete Azure index:', ep.azureIndexName, err)
+      })
+    )
+  }
 
   return c.json({ success: true })
 })
