@@ -69,8 +69,9 @@ export AGENTPORT_API_KEY="ap_sk_a1b2c3d4e5f6..."
 
 ### 2. Create an endpoint
 
-An endpoint is your knowledge base — a container for your docs that agents can query.
+An endpoint is your knowledge base — a container for your docs that agents can query. You choose how it works:
 
+**Platform mode** (default) — we handle everything. You upload docs, we do RAG + LLM:
 ```bash
 curl -X POST https://agentport-api.mcnewbrad.workers.dev/v1/endpoints \
   -H "Authorization: Bearer $AGENTPORT_API_KEY" \
@@ -78,11 +79,32 @@ curl -X POST https://agentport-api.mcnewbrad.workers.dev/v1/endpoints \
   -d '{"slug": "api-docs", "name": "Acme API Docs", "description": "Answers questions about the Acme API"}'
 ```
 
+**BYOK mode** — bring your own OpenAI or Anthropic key. We handle RAG, you pay for the LLM:
+```bash
+curl -X POST https://agentport-api.mcnewbrad.workers.dev/v1/endpoints \
+  -H "Authorization: Bearer $AGENTPORT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"slug": "api-docs", "name": "Acme API Docs", "mode": "byok", "llm_provider": "openai", "llm_api_key": "sk-...", "llm_model": "gpt-4o"}'
+```
+
+**External mode** — you already have an agent. We just route queries to it:
+```bash
+curl -X POST https://agentport-api.mcnewbrad.workers.dev/v1/endpoints \
+  -H "Authorization: Bearer $AGENTPORT_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"slug": "my-agent", "name": "My Agent", "mode": "external", "webhook_url": "https://api.acme.com/agent/query"}'
+```
+
 **Fields:**
-- `slug` (required) — URL-safe identifier. Lowercase, hyphens, no spaces. Used in API paths.
-- `name` (required) — Display name for the endpoint.
+- `slug` (required) — URL-safe identifier. Lowercase, hyphens, no spaces.
+- `name` (required) — Display name.
 - `description` (optional) — What this endpoint knows about. Shown in the SKILL.md.
-- `capabilities` (optional) — Array of strings describing what agents can do (e.g., `["answer_questions", "search_docs"]`).
+- `capabilities` (optional) — Array of strings (e.g., `["answer_questions", "search_docs"]`).
+- `mode` (optional) — `"platform"` (default), `"byok"`, or `"external"`.
+- `llm_model` (optional) — Model to use. Platform mode: `"gpt-5-mini"` (default) or `"gpt-5-nano"`. BYOK: any model your provider supports.
+- `webhook_url` (required for external) — HTTPS URL. We POST `{"query", "context"}`, expect `{"answer", "sources?", "usage?"}` back.
+- `llm_provider` (required for BYOK) — `"openai"` or `"anthropic"`.
+- `llm_api_key` (required for BYOK) — Your provider API key. Stored securely.
 
 **Response:**
 ```json
@@ -91,6 +113,7 @@ curl -X POST https://agentport-api.mcnewbrad.workers.dev/v1/endpoints \
     "id": "def456",
     "slug": "api-docs",
     "name": "Acme API Docs",
+    "mode": "platform",
     "skill_md_url": "https://agentport-api.mcnewbrad.workers.dev/v1/e/def456/skill.md"
   }
 }
@@ -171,7 +194,7 @@ All requests use JSON. All write endpoints require `Authorization: Bearer {api_k
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/v1/endpoints` | Bearer | Create endpoint. Body: `{"slug", "name", "description?", "capabilities?"}` |
+| POST | `/v1/endpoints` | Bearer | Create endpoint. Body: `{"slug", "name", "mode?", "description?", "capabilities?", "llm_model?", "webhook_url?", "llm_provider?", "llm_api_key?"}` |
 | GET | `/v1/endpoints` | Bearer | List all your endpoints. |
 | GET | `/v1/endpoints/{slug}` | Bearer | Get endpoint details. |
 | PATCH | `/v1/endpoints/{slug}` | Bearer | Update endpoint. Body: any of `{"name?", "description?", "capabilities?", "status?"}` |
@@ -181,7 +204,7 @@ All requests use JSON. All write endpoints require `Authorization: Bearer {api_k
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/v1/endpoints/{slug}/docs` | Bearer | Upload document. Body: `{"content", "filename"}` |
+| POST | `/v1/endpoints/{slug}/docs` | Bearer | Upload document (platform/BYOK only, not external). Body: `{"content", "filename"}` |
 | GET | `/v1/endpoints/{slug}/docs` | Bearer | List documents with chunk counts. |
 
 ### Queries
@@ -199,6 +222,44 @@ All requests use JSON. All write endpoints require `Authorization: Bearer {api_k
 | GET | `/v1/e/{endpoint_id}/llms.txt` | None | Public llms.txt for an endpoint. |
 | GET | `/v1/endpoints/{slug}/skill.md` | Bearer | Authenticated SKILL.md (scoped to your account). |
 | POST | `/v1/endpoints/{slug}/skill` | Bearer | Regenerate SKILL.md after updating endpoint config. |
+
+---
+
+## Endpoint Modes
+
+Every endpoint runs in one of three modes. Choose when you create the endpoint.
+
+### Platform (default)
+We handle everything. Upload docs, we chunk + embed + index them. Queries go through our RAG pipeline (hybrid search + semantic reranking) and LLM.
+
+Pick your model: `"gpt-5-mini"` (default, best quality) or `"gpt-5-nano"` (lightweight, cheapest).
+
+### BYOK (Bring Your Own Key)
+Bring your own OpenAI or Anthropic API key. We still handle RAG (embedding + search with our infrastructure). Your key is used only for the LLM chat generation step — you pay your provider directly.
+
+Set `"mode": "byok"`, `"llm_provider": "openai"` or `"anthropic"`, `"llm_api_key": "sk-..."`, and optionally `"llm_model"`.
+
+### External (Bring Your Own Agent)
+You already have an agent. We just route queries to it via webhook. No documents, no RAG — your agent handles everything.
+
+Set `"mode": "external"` and `"webhook_url": "https://..."` (must be HTTPS).
+
+**Webhook contract — what we send:**
+```json
+POST {your_webhook_url}
+Content-Type: application/json
+
+{"query": "How do I authenticate?", "context": "optional context"}
+```
+
+**What we expect back:**
+```json
+{"answer": "Use Bearer tokens.", "sources": [{"document": "auth.md", "content": "..."}], "usage": {"input_tokens": 100, "output_tokens": 50}}
+```
+
+Only `answer` is required. `sources` and `usage` are optional. 30-second timeout.
+
+Document uploads are not supported for external endpoints — queries go directly to your agent.
 
 ---
 
