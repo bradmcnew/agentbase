@@ -188,11 +188,13 @@ export class AzureSearchClient {
     await this.request(`/indexes/${indexName}`, { method: 'DELETE' })
   }
 
-  /** List documents in an index. */
-  async listDocuments(indexName: string): Promise<Array<{ id: string; filename: string; chunkIndex: number }>> {
-    const result = await this.request<{ value: Array<{ id: string; filename: string; chunkIndex: number }> }>(
-      `/indexes/${indexName}/docs?$select=id,filename,chunkIndex&$top=1000`
-    )
+  /** List documents in an index, optionally filtered by filename. */
+  async listDocuments(indexName: string, filename?: string): Promise<Array<{ id: string; filename: string; chunkIndex: number }>> {
+    let url = `/indexes/${indexName}/docs?$select=id,filename,chunkIndex&$top=1000`
+    if (filename) {
+      url += `&$filter=filename eq '${filename.replace(/'/g, "''")}'`
+    }
+    const result = await this.request<{ value: Array<{ id: string; filename: string; chunkIndex: number }> }>(url)
     return result.value
   }
 

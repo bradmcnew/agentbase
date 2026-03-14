@@ -99,8 +99,7 @@ app.delete('/v1/endpoints/:slug/docs/:filename', resolveEndpoint as any, async (
   const search = createSearchClient(c.env)
 
   try {
-    const allDocs = await search.listDocuments(ep.azureIndexName)
-    const matching = allDocs.filter(d => d.filename === filename)
+    const matching = await search.listDocuments(ep.azureIndexName, filename)
 
     if (matching.length === 0) {
       return errorResponse(c, 404, ErrorCode.NOT_FOUND, `No document found with filename "${filename}"`)
