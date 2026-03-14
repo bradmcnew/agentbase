@@ -9,6 +9,7 @@ import { authMiddleware } from '../middleware/auth'
 import { resolveEndpoint } from '../middleware/resolve-endpoint'
 import { errorResponse, serviceError, ErrorCode } from '../utils/errors'
 import { parseBody, safeJsonParse, parseIntParam } from '../utils/validate'
+import { signPayload } from '../utils/hmac'
 import { QueryEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE } from '../types'
 import type { Env, AppVariables } from '../types'
 
@@ -24,6 +25,7 @@ const app = new Hono<{ Bindings: Env; Variables: AppVariables }>()
 app.use('*', authMiddleware)
 
 // Query an endpoint (THE CORE PRODUCT)
+// Rate limit: 60 requests per minute per key (enforced by Unkey)
 app.post('/v1/endpoints/:slug/query', resolveEndpoint as any, async (c) => {
   const startTime = Date.now()
   const ep = c.get('endpoint')
@@ -49,12 +51,22 @@ app.post('/v1/endpoints/:slug/query', resolveEndpoint as any, async (c) => {
 
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS)
+      const webhookBody = JSON.stringify({ query: data.query, context: data.context })
+
+      // Sign the request so customers can verify it came from AgentPort
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (ep.webhookSecret) {
+        const timestamp = Math.floor(Date.now() / 1000).toString()
+        const signature = await signPayload(`${timestamp}.${webhookBody}`, ep.webhookSecret)
+        headers['X-AgentPort-Signature'] = signature
+        headers['X-AgentPort-Timestamp'] = timestamp
+      }
 
       try {
         const res = await fetch(ep.webhookUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ query: data.query, context: data.context }),
+          headers,
+          body: webhookBody,
           signal: controller.signal,
         })
         clearTimeout(timeout)

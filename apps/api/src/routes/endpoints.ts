@@ -7,6 +7,7 @@ import { generateSkillMd } from '../services/skill-gen'
 import { authMiddleware } from '../middleware/auth'
 import { resolveEndpoint } from '../middleware/resolve-endpoint'
 import { errorResponse, serviceError, ErrorCode } from '../utils/errors'
+import { encrypt } from '../utils/encrypt'
 import { parseBody, safeJsonParse } from '../utils/validate'
 import { CreateEndpointSchema, UpdateEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE } from '../types'
 import type { Env, AppVariables } from '../types'
@@ -37,6 +38,12 @@ app.post('/v1/endpoints', async (c) => {
   const baseUrl = new URL(c.req.url).origin
   const mode = data.mode || ENDPOINT_MODE.PLATFORM
 
+  // Generate webhook signing secret for external endpoints
+  let webhookSecret: string | null = null
+  if (mode === ENDPOINT_MODE.EXTERNAL) {
+    webhookSecret = `whsec_${generateId()}`
+  }
+
   // Create Azure Search index for platform and byok modes (not external)
   let azureIndexName: string | null = null
   if (mode !== ENDPOINT_MODE.EXTERNAL) {
@@ -61,8 +68,9 @@ app.post('/v1/endpoints', async (c) => {
     mode,
     webhookUrl: data.webhook_url || null,
     llmProvider: data.llm_provider || null,
-    llmApiKey: data.llm_api_key || null,
+    llmApiKey: data.llm_api_key ? await encrypt(data.llm_api_key, c.env.ENCRYPTION_SECRET) : null,
     llmModel: data.llm_model || null,
+    webhookSecret,
     capabilities: JSON.stringify(data.capabilities ?? []),
     systemPrompt: data.system_prompt || null, skillMd,
   })
@@ -76,6 +84,7 @@ app.post('/v1/endpoints', async (c) => {
       status: ENDPOINT_STATUS.ACTIVE,
       skill_md_url: `${baseUrl}/v1/e/${endpointId}/skill.md`,
       created_at: new Date().toISOString(),
+      ...(webhookSecret ? { webhook_secret: webhookSecret } : {}),
     },
   }, 201)
 })
@@ -127,7 +136,7 @@ app.patch('/v1/endpoints/:slug', resolveEndpoint as any, async (c) => {
   if (data.status !== undefined) updates.status = data.status
   if (data.llm_model !== undefined) updates.llmModel = data.llm_model
   if (data.webhook_url !== undefined) updates.webhookUrl = data.webhook_url
-  if (data.llm_api_key !== undefined) updates.llmApiKey = data.llm_api_key
+  if (data.llm_api_key !== undefined) updates.llmApiKey = data.llm_api_key ? await encrypt(data.llm_api_key, c.env.ENCRYPTION_SECRET) : null
 
   if (Object.keys(updates).length > 0) {
     await db.update(endpoints).set(updates).where(eq(endpoints.id, ep.id))

@@ -87,6 +87,9 @@ export interface Env {
   AZURE_OPENAI_API_KEY: string
   AZURE_OPENAI_EMBEDDING_DEPLOYMENT: string
   AZURE_OPENAI_CHAT_DEPLOYMENT: string
+  ENCRYPTION_SECRET: string  // For encrypting BYOK API keys at rest
+  UNKEY_ROOT_KEY: string
+  UNKEY_API_ID: string
 }
 
 // --- Auth context ---

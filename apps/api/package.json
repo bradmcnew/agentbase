@@ -11,8 +11,10 @@
     "db:migrate:remote": "wrangler d1 migrations apply agentport-db --remote"
   },
   "dependencies": {
-    "hono": "^4.7.0",
+    "@unkey/api": "^2.3.1",
+    "@unkey/hono": "^2.0.0",
     "drizzle-orm": "^0.39.0",
+    "hono": "^4.7.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {

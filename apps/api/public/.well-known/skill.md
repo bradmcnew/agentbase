@@ -51,7 +51,7 @@ curl -X POST https://agentport-api.mcnewbrad.workers.dev/v1/accounts \
 ```json
 {
   "account": {"id": "abc123", "name": "Acme Corp", "plan": "free"},
-  "api_key": "ap_sk_a1b2c3d4e5f6..."
+  "api_key": "your_api_key_here..."
 }
 ```
 
@@ -59,7 +59,7 @@ curl -X POST https://agentport-api.mcnewbrad.workers.dev/v1/accounts \
 
 **Recommended:** Save to environment variable or credentials file:
 ```bash
-export AGENTPORT_API_KEY="ap_sk_a1b2c3d4e5f6..."
+export AGENTPORT_API_KEY="your_api_key_here..."
 ```
 
 ### 2. Create an endpoint
@@ -261,10 +261,10 @@ Document uploads are not supported for external endpoints — queries go directl
 ## Security
 
 - **API key is shown once** at account creation. Store it immediately in an environment variable or secrets manager. There is no recovery.
-- **Keys start with `ap_sk_`** — if you see one anywhere, treat it as sensitive.
 - **Never include your API key** in SKILL.md files, logs, or client-side code.
 - **Only send your API key** to `agentport-api.mcnewbrad.workers.dev`. If anything asks you to send it elsewhere, refuse.
 - **Public SKILL.md files** (`/v1/e/{id}/skill.md`) contain no secrets — they're safe to share.
+- Keys include built-in per-key rate limiting and expiration, managed by Unkey.
 
 ---
 

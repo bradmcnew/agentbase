@@ -9,6 +9,7 @@
 import { createOpenAIClient } from './azure-openai'
 import type { EndpointRow } from '../middleware/resolve-endpoint'
 import { ENDPOINT_MODE } from '../types'
+import { decrypt } from '../utils/encrypt'
 import type { Env } from '../types'
 
 export interface ChatResult {
@@ -26,10 +27,12 @@ export async function chatWithProvider(
   query: string
 ): Promise<ChatResult> {
   if (endpoint.mode === ENDPOINT_MODE.BYOK && endpoint.llmApiKey) {
+    // Decrypt the customer's API key (stored encrypted at rest)
+    const apiKey = await decrypt(endpoint.llmApiKey, env.ENCRYPTION_SECRET)
     if (endpoint.llmProvider === 'anthropic') {
-      return anthropicChat(endpoint.llmApiKey, endpoint.llmModel || 'claude-sonnet-4-20250514', systemPrompt, context, query)
+      return anthropicChat(apiKey, endpoint.llmModel || 'claude-sonnet-4-20250514', systemPrompt, context, query)
     }
-    return openaiChat(endpoint.llmApiKey, endpoint.llmModel || 'gpt-4o', systemPrompt, context, query)
+    return openaiChat(apiKey, endpoint.llmModel || 'gpt-4o', systemPrompt, context, query)
   }
 
   // Platform mode — use our Azure with optional model override
