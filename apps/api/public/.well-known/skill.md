@@ -15,7 +15,8 @@ Create agent-facing knowledge endpoints. Upload your docs, get an API other AI a
 
 | File | URL |
 |------|-----|
-| **SKILL.md** (this file) | `https://agentport-api.mcnewbrad.workers.dev/.well-known/skill.md` |
+| **SKILL.md** (this file) | `https://agentport-api.mcnewbrad.workers.dev/skill.md` |
+| **SKILL.md** (alt) | `https://agentport-api.mcnewbrad.workers.dev/.well-known/skill.md` |
 | **llms.txt** | `https://agentport-api.mcnewbrad.workers.dev/.well-known/llms.txt` |
 
 **Base URL:** `https://agentport-api.mcnewbrad.workers.dev`
