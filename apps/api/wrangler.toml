@@ -1,0 +1,18 @@
+name = "agentport-api"
+main = "src/index.ts"
+compatibility_date = "2025-03-13"
+compatibility_flags = ["nodejs_compat"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "agentport-db"
+database_id = "7e9dea6e-9a9f-4667-bb64-ab3ee46ef7f7"
+migrations_dir = "src/db/migrations"
+
+# Secrets (set in .dev.vars for local, `wrangler secret put` for production):
+# AZURE_SEARCH_ENDPOINT
+# AZURE_SEARCH_API_KEY
+# AZURE_OPENAI_ENDPOINT
+# AZURE_OPENAI_API_KEY
+# AZURE_OPENAI_EMBEDDING_DEPLOYMENT
+# AZURE_OPENAI_CHAT_DEPLOYMENT

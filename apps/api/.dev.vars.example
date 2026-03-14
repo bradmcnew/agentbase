@@ -1,0 +1,14 @@
+# Copy to .dev.vars and fill in your Azure credentials
+# .dev.vars is gitignored — never commit real keys
+
+# Azure AI Search (from Azure Portal → Search service → Overview + Keys)
+AZURE_SEARCH_ENDPOINT=https://your-search-service.search.windows.net
+AZURE_SEARCH_API_KEY=your-admin-api-key
+
+# Azure OpenAI (from Azure Portal → OpenAI resource → Keys and Endpoint)
+AZURE_OPENAI_ENDPOINT=https://your-openai-resource.openai.azure.com
+AZURE_OPENAI_API_KEY=your-openai-api-key
+
+# Deployment names (from Azure AI Foundry → your deployments)
+AZURE_OPENAI_EMBEDDING_DEPLOYMENT=text-embedding-ada-002
+AZURE_OPENAI_CHAT_DEPLOYMENT=gpt-5-mini
