@@ -202,8 +202,9 @@ All requests use JSON. All write endpoints require `Authorization: Bearer {api_k
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/v1/endpoints/{slug}/docs` | Bearer | Upload document (platform/BYOK only, not external). Body: `{"content", "filename"}` |
+| POST | `/v1/endpoints/{slug}/docs` | Bearer | Upload document (platform/BYOK only, not external). Body: `{"content", "filename"}` or `{"pdf", "filename"}` |
 | GET | `/v1/endpoints/{slug}/docs` | Bearer | List documents with chunk counts. |
+| DELETE | `/v1/endpoints/{slug}/docs/{filename}` | Bearer | Delete document and all its chunks from the index. |
 
 ### Queries
 

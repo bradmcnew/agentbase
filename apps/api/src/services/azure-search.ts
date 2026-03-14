@@ -169,6 +169,20 @@ export class AzureSearchClient {
     }))
   }
 
+  /** Delete documents by ID from an index. */
+  async deleteDocuments(indexName: string, docIds: string[]): Promise<{ deleted: number }> {
+    const result = await this.request<{ value: Array<{ key: string; status: boolean }> }>(
+      `/indexes/${indexName}/docs/index`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          value: docIds.map(id => ({ '@search.action': 'delete', id })),
+        }),
+      }
+    )
+    return { deleted: result.value.reduce((n, r) => n + (r.status ? 1 : 0), 0) }
+  }
+
   /** Delete an index entirely. */
   async deleteIndex(indexName: string): Promise<void> {
     await this.request(`/indexes/${indexName}`, { method: 'DELETE' })

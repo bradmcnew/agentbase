@@ -40,11 +40,12 @@ app.post('/v1/endpoints/:slug/docs', resolveEndpoint as any, async (c) => {
   let textContent = data.content
   if (data.pdf) {
     try {
-      const pdfBytes = Uint8Array.from(atob(data.pdf), c => c.charCodeAt(0))
+      const pdfBytes = Uint8Array.from(atob(data.pdf), byte => byte.charCodeAt(0))
       const { text } = await extractText(pdfBytes, { mergePages: true })
       textContent = text
     } catch (err) {
-      return serviceError(c, ErrorCode.VALIDATION_ERROR, 'Failed to parse PDF. Ensure the file is a valid PDF.', err)
+      console.error('PDF parse error:', err instanceof Error ? err.message : err)
+      return errorResponse(c, 400, ErrorCode.VALIDATION_ERROR, 'Failed to parse PDF. Ensure the file is a valid PDF.')
     }
   }
 
@@ -83,6 +84,32 @@ app.post('/v1/endpoints/:slug/docs', resolveEndpoint as any, async (c) => {
     }, 201)
   } catch (err) {
     return serviceError(c, ErrorCode.INDEXING_ERROR, 'Failed to index document. Please try again.', err)
+  }
+})
+
+// Delete document by filename
+app.delete('/v1/endpoints/:slug/docs/:filename', resolveEndpoint as any, async (c) => {
+  const ep = c.get('endpoint')
+  const filename = decodeURIComponent(c.req.param('filename'))
+
+  if (!ep.azureIndexName) {
+    return errorResponse(c, 422, ErrorCode.SEARCH_ERROR, 'Endpoint has no search index')
+  }
+
+  const search = createSearchClient(c.env)
+
+  try {
+    const allDocs = await search.listDocuments(ep.azureIndexName)
+    const matching = allDocs.filter(d => d.filename === filename)
+
+    if (matching.length === 0) {
+      return errorResponse(c, 404, ErrorCode.NOT_FOUND, `No document found with filename "${filename}"`)
+    }
+
+    const { deleted } = await search.deleteDocuments(ep.azureIndexName, matching.map(d => d.id))
+    return c.json({ deleted: { filename, chunks_removed: deleted } })
+  } catch (err) {
+    return serviceError(c, ErrorCode.SEARCH_ERROR, 'Failed to delete document.', err)
   }
 })
 
