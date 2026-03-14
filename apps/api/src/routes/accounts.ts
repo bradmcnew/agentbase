@@ -59,6 +59,7 @@ app.post('/v1/accounts', async (c) => {
       name: `${data.name} default key`,
       meta: { plan: 'free' },
       ratelimits: [{ name: 'api_requests', limit: 60, duration: 60_000 }],
+      credits: { remaining: 50, refill: { interval: 'daily', amount: 50 } },
     })
 
     await db.insert(accounts).values({ id: accountId, name: data.name, createdBy: 'agent' })

@@ -5,12 +5,12 @@ import { generateId } from '../utils/id'
 import { createSearchClient } from '../services/azure-search'
 import { createOpenAIClient } from '../services/azure-openai'
 import { chatWithProvider } from '../services/llm-chat'
-import { authMiddleware } from '../middleware/auth'
+import { authMiddleware, authWithCredits } from '../middleware/auth'
 import { resolveEndpoint } from '../middleware/resolve-endpoint'
 import { errorResponse, serviceError, ErrorCode } from '../utils/errors'
 import { parseBody, safeJsonParse, parseIntParam } from '../utils/validate'
 import { signPayload } from '../utils/hmac'
-import { QueryEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE } from '../types'
+import { QueryEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE, PLAN_LIMITS } from '../types'
 import type { Env, AppVariables } from '../types'
 
 const SYSTEM_PROMPT = `You are a helpful assistant that answers questions based on the provided documents.
@@ -22,11 +22,10 @@ const WEBHOOK_TIMEOUT_MS = 30_000
 
 const app = new Hono<{ Bindings: Env; Variables: AppVariables }>()
 
-app.use('*', authMiddleware)
-
 // Query an endpoint (THE CORE PRODUCT)
 // Rate limit: 60 requests per minute per key (enforced by Unkey)
-app.post('/v1/endpoints/:slug/query', resolveEndpoint as any, async (c) => {
+// Daily quota: 50 queries per day per key (Unkey credits, auto-refills daily)
+app.post('/v1/endpoints/:slug/query', authWithCredits, resolveEndpoint as any, async (c) => {
   const startTime = Date.now()
   const ep = c.get('endpoint')
 
@@ -158,6 +157,16 @@ app.post('/v1/endpoints/:slug/query', resolveEndpoint as any, async (c) => {
       })
     )
 
+    // Add rate limit headers for agent visibility
+    const remaining = c.get('remainingCredits')
+    if (remaining !== undefined) {
+      const tomorrow = new Date()
+      tomorrow.setUTCHours(24, 0, 0, 0)
+      c.header('X-RateLimit-Limit', String(PLAN_LIMITS.free.queriesPerDay))
+      c.header('X-RateLimit-Remaining', String(remaining))
+      c.header('X-RateLimit-Reset', tomorrow.toISOString())
+    }
+
     return c.json({
       answer, sources,
       usage: { input_tokens: promptTokens, output_tokens: completionTokens },
@@ -169,7 +178,7 @@ app.post('/v1/endpoints/:slug/query', resolveEndpoint as any, async (c) => {
 })
 
 // List interactions
-app.get('/v1/endpoints/:slug/interactions', resolveEndpoint as any, async (c) => {
+app.get('/v1/endpoints/:slug/interactions', authMiddleware, resolveEndpoint as any, async (c) => {
   const ep = c.get('endpoint')
   const db = c.get('db')
 

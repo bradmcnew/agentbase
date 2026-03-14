@@ -11,6 +11,7 @@ export const ErrorCode = {
   INDEXING_ERROR: 'INDEXING_ERROR',
   QUERY_ERROR: 'QUERY_ERROR',
   INTERNAL_ERROR: 'INTERNAL_ERROR',
+  QUOTA_EXCEEDED: 'QUOTA_EXCEEDED',
 } as const
 
 type ErrorCodeType = typeof ErrorCode[keyof typeof ErrorCode]

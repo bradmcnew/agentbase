@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, ne, sql } from 'drizzle-orm'
 import { endpoints } from '../db/schema'
 import { generateId } from '../utils/id'
 import { AzureSearchClient, createSearchClient } from '../services/azure-search'
@@ -9,7 +9,7 @@ import { resolveEndpoint } from '../middleware/resolve-endpoint'
 import { errorResponse, serviceError, ErrorCode } from '../utils/errors'
 import { encrypt } from '../utils/encrypt'
 import { parseBody, safeJsonParse } from '../utils/validate'
-import { CreateEndpointSchema, UpdateEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE } from '../types'
+import { CreateEndpointSchema, UpdateEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE, PLAN_LIMITS } from '../types'
 import type { Env, AppVariables } from '../types'
 
 const app = new Hono<{ Bindings: Env; Variables: AppVariables }>()
@@ -23,6 +23,17 @@ app.post('/v1/endpoints', async (c) => {
 
   const auth = c.get('auth')
   const db = c.get('db')
+
+  // Check endpoint limit
+  const [{ count: endpointCount }] = await db
+    .select({ count: sql<number>`count(*)` })
+    .from(endpoints)
+    .where(and(eq(endpoints.accountId, auth.accountId), ne(endpoints.status, ENDPOINT_STATUS.ARCHIVED)))
+
+  if (endpointCount >= PLAN_LIMITS.free.maxEndpoints) {
+    return errorResponse(c, 429, ErrorCode.QUOTA_EXCEEDED,
+      `Endpoint limit reached (${PLAN_LIMITS.free.maxEndpoints} active endpoints). Archive unused endpoints or upgrade.`)
+  }
 
   const [existing] = await db
     .select({ id: endpoints.id })

@@ -18,6 +18,13 @@ export const ENDPOINT_MODE = {
 
 export const PLATFORM_MODELS = ['gpt-5-mini', 'gpt-5-nano'] as const
 
+// --- Plan limits ---
+
+export const PLAN_LIMITS = {
+  free: { queriesPerDay: 50, maxEndpoints: 3 },
+  pro: { queriesPerDay: 10_000, maxEndpoints: 50 },
+} as const
+
 export type EndpointStatus = typeof ENDPOINT_STATUS[keyof typeof ENDPOINT_STATUS]
 export type EndpointMode = typeof ENDPOINT_MODE[keyof typeof ENDPOINT_MODE]
 
@@ -105,4 +112,5 @@ export interface AppVariables {
   auth: AuthContext
   db: DrizzleD1Database
   endpoint: EndpointRow
+  remainingCredits: number
 }

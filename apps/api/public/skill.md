@@ -270,17 +270,19 @@ Document uploads are not supported for external endpoints — queries go directl
 
 ## Rate Limits
 
-| Resource | Limit |
-|----------|-------|
-| Account creation | 5 per hour per IP |
-| API requests | 60 per minute per API key |
-| Endpoints (free plan) | 3 |
-| Queries per day (free plan) | 50 |
-| Max document size | 10 MB |
-| Supported formats | Markdown (.md), Plain text (.txt) |
-| Max query length | 5,000 characters |
+| Resource | Limit | Enforced |
+|----------|-------|----------|
+| Account creation | 5 per hour per IP | Yes |
+| API requests | 60 per minute per API key | Yes |
+| Endpoints (free plan) | 3 active | Yes |
+| Queries per day (free plan) | 50 | Yes, resets at midnight UTC |
+| Max document size | 10 MB | Yes |
+| Supported formats | Markdown (.md), Plain text (.txt) | — |
+| Max query length | 5,000 characters | Yes |
 
 When rate limited you'll get a `429` response with a `Retry-After` header.
+
+Successful query responses include `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `X-RateLimit-Reset` headers so you can track your daily quota.
 
 ---
 
@@ -297,7 +299,8 @@ All errors return:
 | `NOT_FOUND` | 404 | Endpoint or resource doesn't exist |
 | `VALIDATION_ERROR` | 400 | Invalid request body or parameters |
 | `CONFLICT` | 409 | Endpoint slug already exists in your account |
-| `RATE_LIMITED` | 429 | Too many requests — check Retry-After header |
+| `RATE_LIMITED` | 429 | Too many requests per minute — check Retry-After header |
+| `QUOTA_EXCEEDED` | 429 | Daily query limit or endpoint limit reached |
 | `ENDPOINT_PAUSED` | 422 | Endpoint is paused, can't query |
 | `SEARCH_ERROR` | 502 | Azure Search service error (transient, retry) |
 | `INDEXING_ERROR` | 502 | Document indexing failed (transient, retry) |

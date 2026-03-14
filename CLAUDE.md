@@ -92,6 +92,9 @@ D1 (SQLite via Drizzle ORM). Three tables: `accounts`, `endpoints`, `interaction
 - Interactions are logged via `c.executionCtx.waitUntil()` — fire and forget, don't block response
 - API keys are managed by Unkey — key creation in `routes/accounts.ts` via `@unkey/api`, verification in `middleware/auth.ts`
 - Per-key rate limiting is handled by Unkey (set on key creation: 60 req/min). Only `POST /v1/accounts` uses in-memory IP rate limiting.
+- Daily query quota (50/day free tier) uses Unkey credits with daily auto-refill. Query route uses `authWithCredits` middleware (direct @unkey/api with credit deduction), other routes use `authMiddleware` (@unkey/hono, no credit deduction).
+- Endpoint limit (3 active per free account) enforced via D1 COUNT in `routes/endpoints.ts`.
+- Plan limits defined in `PLAN_LIMITS` constant in `types.ts`.
 - Azure error messages are never exposed to users — use `serviceError()` which logs internally and returns generic message
 
 ## Environment
