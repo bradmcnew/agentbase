@@ -4,7 +4,7 @@
 
 ## Docs
 
-- [SKILL.md](https://agentbase.axite.ai/.well-known/skill.md): Full API reference, quickstart guide, endpoint modes, and curl examples
+- [SKILL.md](https://agentbase.axite.ai/skill.md): Full API reference, quickstart guide, endpoint modes, and curl examples
 
 ## Essential APIs
 
