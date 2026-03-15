@@ -108,6 +108,7 @@ D1 (SQLite via Drizzle ORM). Three tables: `accounts`, `endpoints`, `interaction
 - PDF uploads accepted via `pdf` field (base64-encoded), extracted in-worker using `unpdf`. Max 10MB base64.
 - Document deletion by filename via `DELETE /v1/endpoints/{slug}/docs/{filename}` — uses Azure Search OData `$filter` for server-side filtering.
 - Azure error messages are never exposed to users — use `serviceError()` which logs internally and returns generic message
+- **Always update skill files** when changing API behavior, adding fields, or modifying endpoints. Keep `public/skill.md` and `public/.well-known/skill.md` in sync (identical content). Check all references — Quick Start examples, field descriptions, API tables, Endpoint Modes section. Move detailed setup guides to separate files (e.g., `external-mode.md`, `custom-domains.md`) to keep the main SKILL.md scannable.
 
 ## Environment
 
