@@ -43,7 +43,7 @@ export const CreateEndpointSchema = z.object({
   // Mode configuration
   mode: z.enum([ENDPOINT_MODE.PLATFORM, ENDPOINT_MODE.BYOK, ENDPOINT_MODE.EXTERNAL]).default(ENDPOINT_MODE.PLATFORM),
   webhook_url: z.string().url().optional(),
-  llm_provider: z.enum(['openai', 'anthropic']).optional(),
+  llm_provider: z.enum(['openai', 'anthropic', 'gemini']).optional(),
   llm_api_key: z.string().optional(),
   llm_model: z.string().optional(),
   external_model: z.string().max(100).optional(),

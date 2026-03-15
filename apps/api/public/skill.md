@@ -108,7 +108,7 @@ curl -X POST https://agentbase.axite.ai/v1/endpoints \
 - `webhook_url` (required for external) -- HTTPS URL to an OpenAI-compatible chat completions endpoint.
 - `external_model` (optional, external only) -- Model name sent in requests (e.g., `"llama3"`, `"openclaw:main"`). Defaults to `"default"`.
 - `external_api_key` (optional, external only) -- Bearer token for the webhook. Stored encrypted.
-- `llm_provider` (required for BYOK) -- `"openai"` or `"anthropic"`.
+- `llm_provider` (required for BYOK) -- `"openai"`, `"anthropic"`, or `"gemini"`.
 - `llm_api_key` (required for BYOK) -- Your provider API key. Stored securely.
 - `custom_domain` (optional) -- Your own domain (e.g., `"docs.acme.com"`). See [custom-domains.md](https://agentbase.axite.ai/custom-domains.md).
 
@@ -336,9 +336,11 @@ We handle everything. Upload docs, we chunk + embed + index them. Queries go thr
 Pick your model: `"gpt-5-mini"` (default, best quality) or `"gpt-5-nano"` (lightweight, cheapest).
 
 ### BYOK (Bring Your Own Key)
-Bring your own OpenAI or Anthropic API key. We still handle RAG (embedding + search with our infrastructure). Your key is used only for the LLM chat generation step -- you pay your provider directly.
+Bring your own OpenAI, Anthropic, or Google Gemini API key. We still handle RAG (embedding + search with our infrastructure). Your key is used only for the LLM chat generation step -- you pay your provider directly.
 
-Set `"mode": "byok"`, `"llm_provider": "openai"` or `"anthropic"`, `"llm_api_key": "sk-..."`, and optionally `"llm_model"`.
+Set `"mode": "byok"`, `"llm_provider": "openai"` or `"anthropic"` or `"gemini"`, `"llm_api_key": "your-key"`, and optionally `"llm_model"`.
+
+Default models: OpenAI `gpt-4o`, Anthropic `claude-sonnet-4-20250514`, Gemini `gemini-2.5-flash`.
 
 ### External (Bring Your Own Agent)
 You already have an agent. We route queries to it using OpenAI chat completions format. Works out of the box with OpenClaw, Ollama, vLLM, LiteLLM, LocalAI, or any OpenAI-compatible endpoint. No documents, no RAG -- your agent handles everything.

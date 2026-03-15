@@ -32,7 +32,10 @@ export async function chatWithProvider(
     if (endpoint.llmProvider === 'anthropic') {
       return anthropicChat(apiKey, endpoint.llmModel || 'claude-sonnet-4-20250514', systemPrompt, context, query)
     }
-    return openaiChat(apiKey, endpoint.llmModel || 'gpt-4o', systemPrompt, context, query)
+    if (endpoint.llmProvider === 'gemini') {
+      return openaiCompatibleChat(apiKey, 'https://generativelanguage.googleapis.com/v1beta/openai', endpoint.llmModel || 'gemini-2.5-flash', systemPrompt, context, query)
+    }
+    return openaiCompatibleChat(apiKey, 'https://api.openai.com/v1', endpoint.llmModel || 'gpt-4o', systemPrompt, context, query)
   }
 
   // Platform mode — use our Azure with optional model override
@@ -40,9 +43,9 @@ export async function chatWithProvider(
   return client.chat(systemPrompt, context, query, endpoint.llmModel || undefined)
 }
 
-/** Call OpenAI's API directly (for BYOK customers with OpenAI keys) */
-async function openaiChat(apiKey: string, model: string, systemPrompt: string, context: string, query: string): Promise<ChatResult> {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+/** Call any OpenAI-compatible API (OpenAI, Gemini, etc.) */
+async function openaiCompatibleChat(apiKey: string, baseUrl: string, model: string, systemPrompt: string, context: string, query: string): Promise<ChatResult> {
+  const res = await fetch(`${baseUrl}/chat/completions`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -57,7 +60,7 @@ async function openaiChat(apiKey: string, model: string, systemPrompt: string, c
 
   if (!res.ok) {
     const body = await res.text()
-    throw new Error(`OpenAI API error ${res.status}: ${body}`)
+    throw new Error(`LLM API error ${res.status}: ${body}`)
   }
 
   const data = await res.json() as {
