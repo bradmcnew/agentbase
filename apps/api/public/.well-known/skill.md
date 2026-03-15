@@ -340,7 +340,7 @@ Bring your own OpenAI, Anthropic, or Google Gemini API key. We still handle RAG 
 
 Set `"mode": "byok"`, `"llm_provider": "openai"` or `"anthropic"` or `"gemini"`, `"llm_api_key": "your-key"`, and optionally `"llm_model"`.
 
-Default models: OpenAI `gpt-5-chat-latest`, Anthropic `claude-sonnet-4-6`, Gemini `gemini-3-flash`.
+Default models: OpenAI `gpt-5-chat-latest`, Anthropic `claude-sonnet-4-6`, Gemini `gemini-2.5-flash`.
 
 ### External (Bring Your Own Agent)
 You already have an agent. We route queries to it using OpenAI chat completions format. Works out of the box with OpenClaw, Ollama, vLLM, LiteLLM, LocalAI, or any OpenAI-compatible endpoint. No documents, no RAG -- your agent handles everything.

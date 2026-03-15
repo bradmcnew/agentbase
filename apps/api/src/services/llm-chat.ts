@@ -33,7 +33,7 @@ export async function chatWithProvider(
       return anthropicChat(apiKey, endpoint.llmModel || 'claude-sonnet-4-6', systemPrompt, context, query)
     }
     if (endpoint.llmProvider === 'gemini') {
-      return openaiCompatibleChat(apiKey, 'https://generativelanguage.googleapis.com/v1beta/openai', endpoint.llmModel || 'gemini-3-flash', systemPrompt, context, query)
+      return openaiCompatibleChat(apiKey, 'https://generativelanguage.googleapis.com/v1beta/openai', endpoint.llmModel || 'gemini-2.5-flash', systemPrompt, context, query)
     }
     return openaiCompatibleChat(apiKey, 'https://api.openai.com/v1', endpoint.llmModel || 'gpt-5-chat-latest', systemPrompt, context, query)
   }
