@@ -126,6 +126,7 @@ app.post('/v1/endpoints/:slug/skill', authMiddleware, resolveEndpoint as any, as
     slug: ep.slug, name: ep.name, description: ep.description,
     capabilities: safeJsonParse(ep.capabilities, []),
     baseUrl, endpointId: ep.id, mode: ep.mode,
+    customDomain: ep.customDomain,
   })
 
   await db.update(endpoints).set({ skillMd }).where(eq(endpoints.id, ep.id))

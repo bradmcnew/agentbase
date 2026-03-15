@@ -200,6 +200,18 @@ app.patch('/v1/endpoints/:slug', resolveEndpoint as any, async (c) => {
     updates.customDomain = newDomain
   }
 
+  // Regenerate SKILL.md if any displayed fields changed
+  if (data.name !== undefined || data.description !== undefined || data.capabilities !== undefined || data.custom_domain !== undefined) {
+    const baseUrl = new URL(c.req.url).origin
+    updates.skillMd = generateSkillMd({
+      slug: ep.slug, name: (updates.name as string) || ep.name,
+      description: (updates.description as string | undefined) ?? ep.description,
+      capabilities: data.capabilities ?? safeJsonParse(ep.capabilities, []),
+      baseUrl, endpointId: ep.id, mode: ep.mode,
+      customDomain: (updates.customDomain as string | undefined) ?? ep.customDomain,
+    })
+  }
+
   if (Object.keys(updates).length > 0) {
     await db.update(endpoints).set(updates).where(eq(endpoints.id, ep.id))
   }

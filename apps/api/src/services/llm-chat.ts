@@ -8,7 +8,7 @@
 
 import { createOpenAIClient } from './azure-openai'
 import type { EndpointRow } from '../middleware/resolve-endpoint'
-import { ENDPOINT_MODE } from '../types'
+import { ENDPOINT_MODE, PLATFORM_MODELS } from '../types'
 import { decrypt } from '../utils/encrypt'
 import type { Env } from '../types'
 
@@ -38,9 +38,12 @@ export async function chatWithProvider(
     return openaiCompatibleChat(apiKey, 'https://api.openai.com/v1', endpoint.llmModel || 'gpt-5-chat-latest', systemPrompt, context, query)
   }
 
-  // Platform mode — use our Azure with optional model override
+  // Platform mode — use our Azure, validate model against allowlist
+  const model = endpoint.llmModel && (PLATFORM_MODELS as readonly string[]).includes(endpoint.llmModel)
+    ? endpoint.llmModel
+    : undefined
   const client = createOpenAIClient(env)
-  return client.chat(systemPrompt, context, query, endpoint.llmModel || undefined)
+  return client.chat(systemPrompt, context, query, model)
 }
 
 /** Call any OpenAI-compatible API (OpenAI, Gemini, etc.) */

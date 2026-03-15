@@ -4,16 +4,26 @@
  * the request came from AgentPort, not an attacker.
  */
 
-/** Generate HMAC-SHA256 signature for a string payload */
-export async function signPayload(payload: string, secret: string): Promise<string> {
-  const encoder = new TextEncoder()
-  const key = await crypto.subtle.importKey(
+/** Cached HMAC keys per secret (avoids re-importing on every request) */
+const keyCache = new Map<string, CryptoKey>()
+
+async function getHmacKey(secret: string): Promise<CryptoKey> {
+  let key = keyCache.get(secret)
+  if (key) return key
+  key = await crypto.subtle.importKey(
     'raw',
-    encoder.encode(secret),
+    new TextEncoder().encode(secret),
     { name: 'HMAC', hash: 'SHA-256' },
     false,
     ['sign']
   )
-  const signature = await crypto.subtle.sign('HMAC', key, encoder.encode(payload))
+  keyCache.set(secret, key)
+  return key
+}
+
+/** Generate HMAC-SHA256 signature for a string payload */
+export async function signPayload(payload: string, secret: string): Promise<string> {
+  const key = await getHmacKey(secret)
+  const signature = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(payload))
   return Array.from(new Uint8Array(signature)).map(b => b.toString(16).padStart(2, '0')).join('')
 }

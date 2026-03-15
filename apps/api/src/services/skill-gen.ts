@@ -12,7 +12,7 @@ interface EndpointConfig {
   capabilities: string[]
   baseUrl: string
   endpointId: string
-  mode?: string  // 'platform' | 'byok' | 'external'
+  mode?: string
   customDomain?: string | null
 }
 

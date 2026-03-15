@@ -3,6 +3,7 @@ import { eq, and, ne } from 'drizzle-orm'
 import { DrizzleD1Database } from 'drizzle-orm/d1'
 import { endpoints } from '../db/schema'
 import { errorResponse, ErrorCode } from '../utils/errors'
+import { ENDPOINT_STATUS } from '../types'
 import type { AuthContext } from '../types'
 
 /** Full endpoint row type inferred from the schema */
@@ -32,7 +33,7 @@ export async function resolveEndpoint(
   const [endpoint] = await db
     .select()
     .from(endpoints)
-    .where(and(eq(endpoints.accountId, auth.accountId), eq(endpoints.slug, slug), ne(endpoints.status, 'archived')))
+    .where(and(eq(endpoints.accountId, auth.accountId), eq(endpoints.slug, slug), ne(endpoints.status, ENDPOINT_STATUS.ARCHIVED)))
     .limit(1)
 
   if (!endpoint) {
