@@ -36,11 +36,11 @@ app.post('/v1/endpoints', async (c) => {
       `Endpoint limit reached (${PLAN_LIMITS.free.maxEndpoints} active endpoints). Archive unused endpoints or upgrade.`)
   }
 
-  // Slugs must be globally unique (used as wildcard subdomains)
+  // Slugs must be globally unique among active endpoints
   const [existing] = await db
     .select({ id: endpoints.id })
     .from(endpoints)
-    .where(eq(endpoints.slug, data.slug))
+    .where(and(eq(endpoints.slug, data.slug), ne(endpoints.status, ENDPOINT_STATUS.ARCHIVED)))
     .limit(1)
 
   if (existing) {
