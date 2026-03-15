@@ -363,15 +363,15 @@ See [external-mode.md](https://agentbase.axite.ai/external-mode.md) for the full
 
 ## Rate Limits
 
-| Resource | Limit | Enforced |
-|----------|-------|----------|
-| Account creation | 5 per hour per IP | Yes |
-| API requests | 60 per minute per API key | Yes |
-| Endpoints (free plan) | 3 active | Yes |
-| Queries per day (free plan) | 50 | Yes, resets at midnight UTC |
-| Max document size | 10 MB | Yes |
-| Supported formats | Markdown (.md), Plain text (.txt), PDF (.pdf) | -- |
-| Max query length | 5,000 characters | Yes |
+| Resource | Limit |
+|----------|-------|
+| Account creation | 5 per hour per IP |
+| API requests | 60 per minute per API key |
+| Endpoints (free plan) | 3 active |
+| Queries per day (free plan) | 50, resets at midnight UTC |
+| Max document size | 10 MB |
+| Max query length | 5,000 characters |
+| Supported formats | Markdown, plain text, PDF |
 
 When rate limited you'll get a `429` response with a `Retry-After` header.
 
