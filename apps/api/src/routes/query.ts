@@ -13,10 +13,12 @@ import { signPayload } from '../utils/hmac'
 import { QueryEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE, PLAN_LIMITS } from '../types'
 import type { Env, AppVariables } from '../types'
 
-const SYSTEM_PROMPT = `You are a helpful assistant that answers questions based on the provided documents.
-Use ONLY the information from the documents below to answer.
-If the answer is not found in the documents, say "I don't have information about that in the knowledge base."
-Be concise and accurate. Cite which document the information comes from when possible.`
+const SYSTEM_PROMPT = `Answer questions using ONLY the provided documents.
+Use short sentences. Include specific details: numbers, tool names, exact values.
+Do NOT use markdown formatting (bold, italics, headers).
+Do NOT cite source documents inline (sources are returned separately in the API response).
+Do NOT add disclaimers, caveats, or meta-commentary.
+If the answer is not in the documents, respond with exactly: "Not in knowledge base."`
 
 const WEBHOOK_TIMEOUT_MS = 30_000
 
