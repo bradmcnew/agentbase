@@ -97,7 +97,18 @@ app.post('/query', resolveByHostname, async (c) => {
 
 // --- Authenticated routes ---
 
-app.get('/docs', resolveByHostname, authMiddleware, async (c) => {
+/** Verify the authenticated account owns the endpoint resolved by hostname */
+async function verifyOwnership(c: any, next: any) {
+  const ep = c.get('endpoint')
+  const auth = c.get('auth')
+  if (!ep || !auth) return
+  if (ep.accountId !== auth.accountId) {
+    return errorResponse(c, 403, ErrorCode.UNAUTHORIZED, 'Not authorized for this endpoint')
+  }
+  return next()
+}
+
+app.get('/docs', resolveByHostname, authMiddleware, verifyOwnership, async (c) => {
   const ep = c.get('endpoint')
   if (!ep) return
 
@@ -120,7 +131,7 @@ app.get('/docs', resolveByHostname, authMiddleware, async (c) => {
   }
 })
 
-app.post('/docs', resolveByHostname, authMiddleware, async (c) => {
+app.post('/docs', resolveByHostname, authMiddleware, verifyOwnership, async (c) => {
   const ep = c.get('endpoint')
   if (!ep) return
 
@@ -185,7 +196,7 @@ app.post('/docs', resolveByHostname, authMiddleware, async (c) => {
   }
 })
 
-app.delete('/docs/:filename', resolveByHostname, authMiddleware, async (c) => {
+app.delete('/docs/:filename', resolveByHostname, authMiddleware, verifyOwnership, async (c) => {
   const ep = c.get('endpoint')
   if (!ep) return
 
@@ -208,7 +219,7 @@ app.delete('/docs/:filename', resolveByHostname, authMiddleware, async (c) => {
   }
 })
 
-app.get('/interactions', resolveByHostname, authMiddleware, async (c) => {
+app.get('/interactions', resolveByHostname, authMiddleware, verifyOwnership, async (c) => {
   const ep = c.get('endpoint')
   if (!ep) return
 

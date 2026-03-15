@@ -28,6 +28,13 @@ export const PLAN_LIMITS = {
 export type EndpointStatus = typeof ENDPOINT_STATUS[keyof typeof ENDPOINT_STATUS]
 export type EndpointMode = typeof ENDPOINT_MODE[keyof typeof ENDPOINT_MODE]
 
+// --- Domain blocklist ---
+
+const BLOCKED_DOMAIN_SUFFIXES = ['.axite.ai', '.workers.dev', '.cloudflare.com', '.cloudflaressl.com', '.pages.dev', '.r2.dev']
+const isBlockedDomain = (d: string) => BLOCKED_DOMAIN_SUFFIXES.some(s => d === s.slice(1) || d.endsWith(s))
+
+const customDomainBase = z.string().max(253).regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/, 'Must be a valid hostname')
+
 // --- Request schemas ---
 
 export const CreateAccountSchema = z.object({
@@ -38,17 +45,17 @@ export const CreateEndpointSchema = z.object({
   slug: z.string().min(1).max(100).regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens'),
   name: z.string().min(1).max(200),
   description: z.string().max(2000).optional(),
-  capabilities: z.array(z.string()).default([]),
+  capabilities: z.array(z.string().max(200)).max(50).default([]),
   system_prompt: z.string().max(5000).optional(),
   // Mode configuration
   mode: z.enum([ENDPOINT_MODE.PLATFORM, ENDPOINT_MODE.BYOK, ENDPOINT_MODE.EXTERNAL]).default(ENDPOINT_MODE.PLATFORM),
   webhook_url: z.string().url().optional(),
   llm_provider: z.enum(['openai', 'anthropic', 'gemini']).optional(),
-  llm_api_key: z.string().optional(),
-  llm_model: z.string().optional(),
+  llm_api_key: z.string().max(500).optional(),
+  llm_model: z.string().max(100).optional(),
   external_model: z.string().max(100).optional(),
-  external_api_key: z.string().optional(),
-  custom_domain: z.string().max(253).regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/, 'Must be a valid hostname').optional(),
+  external_api_key: z.string().max(500).optional(),
+  custom_domain: customDomainBase.refine(d => !isBlockedDomain(d), { message: 'This domain is reserved' }).optional(),
 }).superRefine((data, ctx) => {
   if (data.mode === ENDPOINT_MODE.EXTERNAL && !data.webhook_url) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'webhook_url is required for external mode', path: ['webhook_url'] })
@@ -67,21 +74,21 @@ export const CreateEndpointSchema = z.object({
 export const UpdateEndpointSchema = z.object({
   name: z.string().min(1).max(200).optional(),
   description: z.string().max(2000).optional(),
-  capabilities: z.array(z.string()).optional(),
+  capabilities: z.array(z.string().max(200)).max(50).optional(),
   system_prompt: z.string().max(5000).optional(),
   status: z.enum([ENDPOINT_STATUS.ACTIVE, ENDPOINT_STATUS.PAUSED]).optional(),
-  llm_model: z.string().optional(),
+  llm_model: z.string().max(100).optional(),
   webhook_url: z.string().url().refine(u => u.startsWith('https://'), { message: 'webhook_url must use HTTPS' }).optional(),
-  llm_api_key: z.string().optional(),
+  llm_api_key: z.string().max(500).optional(),
   external_model: z.string().max(100).optional(),
-  external_api_key: z.string().optional(),
-  custom_domain: z.string().max(253).regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/, 'Must be a valid hostname').nullable().optional(),
+  external_api_key: z.string().max(500).optional(),
+  custom_domain: customDomainBase.refine(d => !isBlockedDomain(d), { message: 'This domain is reserved' }).nullable().optional(),
 })
 
 export const UploadDocumentSchema = z.object({
-  content: z.string().min(1).optional(),
+  content: z.string().min(1).max(1_000_000).optional(),
   pdf: z.string().max(10_485_760).optional(),  // ~7.5MB decoded (10MB base64 limit)
-  filename: z.string().min(1).max(255),
+  filename: z.string().min(1).max(255).regex(/^[a-zA-Z0-9._\- ]+$/, 'Filename contains invalid characters'),
 }).refine(
   data => data.content || data.pdf,
   { message: 'Either content or pdf (base64) is required' }

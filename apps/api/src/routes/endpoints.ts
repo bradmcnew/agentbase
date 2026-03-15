@@ -84,7 +84,7 @@ app.post('/v1/endpoints', async (c) => {
     llmProvider: data.llm_provider || null,
     llmApiKey: data.llm_api_key ? await encrypt(data.llm_api_key, c.env.ENCRYPTION_SECRET) : null,
     llmModel: data.llm_model || null,
-    webhookSecret,
+    webhookSecret: webhookSecret ? await encrypt(webhookSecret, c.env.ENCRYPTION_SECRET) : null,
     externalModel: data.external_model || null,
     externalApiKey: data.external_api_key ? await encrypt(data.external_api_key, c.env.ENCRYPTION_SECRET) : null,
     capabilities: JSON.stringify(data.capabilities ?? []),

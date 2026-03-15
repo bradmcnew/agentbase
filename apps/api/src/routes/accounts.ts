@@ -37,7 +37,7 @@ function ipRateLimit(ip: string, maxRequests: number, windowMs: number): number 
 
 app.post('/v1/accounts', async (c) => {
   // IP-based rate limit: 5 per hour
-  const ip = c.req.header('cf-connecting-ip') || c.req.header('x-forwarded-for') || 'unknown'
+  const ip = c.req.header('cf-connecting-ip') || 'unknown'
   const retryAfter = ipRateLimit(ip, 5, 60 * 60 * 1000)
   if (retryAfter !== null) {
     c.header('Retry-After', String(retryAfter))

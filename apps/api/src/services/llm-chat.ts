@@ -59,7 +59,7 @@ async function openaiCompatibleChat(apiKey: string, baseUrl: string, model: stri
   })
 
   if (!res.ok) {
-    const body = await res.text()
+    const body = (await res.text()).slice(0, 200)
     throw new Error(`LLM API error ${res.status}: ${body}`)
   }
 
@@ -95,7 +95,7 @@ async function anthropicChat(apiKey: string, model: string, systemPrompt: string
   })
 
   if (!res.ok) {
-    const body = await res.text()
+    const body = (await res.text()).slice(0, 200)
     throw new Error(`Anthropic API error ${res.status}: ${body}`)
   }
 
