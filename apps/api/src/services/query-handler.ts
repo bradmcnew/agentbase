@@ -208,6 +208,13 @@ export async function handleQuery(c: Context, ep: EndpointRow): Promise<Response
       interaction_id: interactionId,
     })
   } catch (err) {
-    return serviceError(c, ErrorCode.QUERY_ERROR, 'Failed to process query. Please try again.', err)
+    // Surface upstream provider errors (e.g., "LLM API error 401: Invalid API key")
+    // so agents can self-diagnose BYOK key issues, webhook failures, etc.
+    const msg = err instanceof Error ? err.message : ''
+    const upstreamMatch = msg.match(/^(LLM API|Anthropic API|Webhook).*?(\d{3})/)
+    const userMessage = upstreamMatch
+      ? `Query failed: upstream returned ${upstreamMatch[2]}. Check your API key or webhook configuration.`
+      : 'Failed to process query. Please try again.'
+    return serviceError(c, ErrorCode.QUERY_ERROR, userMessage, err)
   }
 }
