@@ -13,6 +13,7 @@ interface EndpointConfig {
   baseUrl: string
   endpointId: string
   mode?: string  // 'platform' | 'byok' | 'external'
+  customDomain?: string | null
 }
 
 export function generateSkillMd(config: EndpointConfig): string {
@@ -22,12 +23,20 @@ export function generateSkillMd(config: EndpointConfig): string {
 
   const desc = config.description || `Knowledge base endpoint for ${config.name}. Query via REST API with semantic search. Returns answers grounded in uploaded documents.`
 
+  // Custom domain endpoints use simplified URLs (no /v1/endpoints/{slug}/ prefix)
+  const hasCustomDomain = !!config.customDomain
+  const skillBaseUrl = hasCustomDomain ? `https://${config.customDomain}` : config.baseUrl
+  const queryPath = hasCustomDomain ? `${skillBaseUrl}/query` : `${config.baseUrl}/v1/endpoints/${config.slug}/query`
+  const skillMdUrl = hasCustomDomain ? `${skillBaseUrl}/skill.md` : `${config.baseUrl}/v1/e/${config.endpointId}/skill.md`
+  const llmsTxtUrl = hasCustomDomain ? `${skillBaseUrl}/llms.txt` : `${config.baseUrl}/v1/e/${config.endpointId}/llms.txt`
+  const hostname = hasCustomDomain ? config.customDomain! : new URL(config.baseUrl).hostname
+
   return `---
 name: ${config.slug}
 description: ${desc}
 metadata:
   version: "1.0.0"
-  base_url: ${config.baseUrl}
+  base_url: ${skillBaseUrl}
   endpoint_id: ${config.endpointId}
   auth_type: api_key
   auth_header: Authorization
@@ -42,17 +51,17 @@ ${desc}
 
 | File | URL |
 |------|-----|
-| **SKILL.md** (this file) | \`${config.baseUrl}/v1/e/${config.endpointId}/skill.md\` |
-| **llms.txt** | \`${config.baseUrl}/v1/e/${config.endpointId}/llms.txt\` |
+| **SKILL.md** (this file) | \`${skillMdUrl}\` |
+| **llms.txt** | \`${llmsTxtUrl}\` |
 
-> **SECURITY:** Only send your API key to \`${new URL(config.baseUrl).hostname}\`. Never share it in prompts, logs, or other agents.
+> **SECURITY:** Only send your API key to \`${hostname}\`. Never share it in prompts, logs, or other agents.
 
 ---
 
 ## How to Query
 
 \`\`\`bash
-curl -X POST ${config.baseUrl}/v1/endpoints/${config.slug}/query \\
+curl -X POST ${queryPath} \\
   -H "Authorization: Bearer YOUR_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{"query": "your question here"}'
@@ -90,6 +99,9 @@ ${caps}
 
 export function generateLlmsTxt(config: EndpointConfig): string {
   const desc = config.description || `Knowledge base for ${config.name}.`
+  const hasCustomDomain = !!config.customDomain
+  const skillMdUrl = hasCustomDomain ? `https://${config.customDomain}/skill.md` : `${config.baseUrl}/v1/e/${config.endpointId}/skill.md`
+  const queryUrl = hasCustomDomain ? `https://${config.customDomain}/query` : `${config.baseUrl}/v1/endpoints/${config.slug}/query`
 
   return `# ${config.name}
 
@@ -97,10 +109,10 @@ export function generateLlmsTxt(config: EndpointConfig): string {
 
 ## Docs
 
-- [SKILL.md](${config.baseUrl}/v1/e/${config.endpointId}/skill.md): How to query this knowledge base
+- [SKILL.md](${skillMdUrl}): How to query this knowledge base
 
 ## API
 
-- POST ${config.baseUrl}/v1/endpoints/${config.slug}/query: Ask a question (requires API key)
+- POST ${queryUrl}: Ask a question (requires API key)
 `
 }

@@ -26,6 +26,7 @@ export const endpoints = sqliteTable('endpoints', {
   capabilities: text('capabilities').notNull().default('[]'),
   systemPrompt: text('system_prompt'),
   skillMd: text('skill_md'),
+  customDomain: text('custom_domain'),   // e.g., "docs.acme.com"
   status: text('status').notNull().default('active'),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 }, (table) => [

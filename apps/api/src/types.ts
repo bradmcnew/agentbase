@@ -46,6 +46,7 @@ export const CreateEndpointSchema = z.object({
   llm_provider: z.enum(['openai', 'anthropic']).optional(),
   llm_api_key: z.string().optional(),
   llm_model: z.string().optional(),
+  custom_domain: z.string().max(253).regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/, 'Must be a valid hostname').optional(),
 }).superRefine((data, ctx) => {
   if (data.mode === ENDPOINT_MODE.EXTERNAL && !data.webhook_url) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'webhook_url is required for external mode', path: ['webhook_url'] })
@@ -70,11 +71,12 @@ export const UpdateEndpointSchema = z.object({
   llm_model: z.string().optional(),
   webhook_url: z.string().url().optional(),
   llm_api_key: z.string().optional(),
+  custom_domain: z.string().max(253).regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/, 'Must be a valid hostname').nullable().optional(),
 })
 
 export const UploadDocumentSchema = z.object({
   content: z.string().min(1).optional(),
-  pdf: z.string().optional(),
+  pdf: z.string().max(10_485_760).optional(),  // ~7.5MB decoded (10MB base64 limit)
   filename: z.string().min(1).max(255),
 }).refine(
   data => data.content || data.pdf,
@@ -104,6 +106,8 @@ export interface Env {
   ENCRYPTION_SECRET: string  // For encrypting BYOK API keys at rest
   UNKEY_ROOT_KEY: string
   UNKEY_API_ID: string
+  CF_ZONE_ID: string
+  CF_API_TOKEN: string
 }
 
 // --- Auth context ---

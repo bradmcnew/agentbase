@@ -28,3 +28,5 @@ migrations_dir = "src/db/migrations"
 # AZURE_OPENAI_CHAT_DEPLOYMENT
 # UNKEY_ROOT_KEY
 # UNKEY_API_ID
+# CF_ZONE_ID
+# CF_API_TOKEN

@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { dbMiddleware } from './middleware/db'
+import customDomainRoutes from './routes/custom-domain'
 import platformRoutes from './routes/platform'
 import accountRoutes from './routes/accounts'
 import endpointRoutes from './routes/endpoints'
@@ -23,7 +24,8 @@ app.onError((err, c) => {
   return c.json({ error: { code: 'INTERNAL_ERROR', message: 'An unexpected error occurred' } }, 500)
 })
 
-// Mount routes (order matters: public routes first, then auth-protected)
+// Mount routes (order matters: custom domain first, then public, then auth-protected)
+app.route('/', customDomainRoutes)
 app.route('/', platformRoutes)
 app.route('/', accountRoutes)
 app.route('/', skillRoutes)
