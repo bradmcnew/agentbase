@@ -5,6 +5,7 @@
 ## Docs
 
 - [SKILL.md](https://agentbase.axite.ai/skill.md): Full API reference, quickstart guide, endpoint modes, and curl examples
+- [HEARTBEAT.md](https://agentbase.axite.ai/heartbeat.md): Periodic maintenance routine for keeping your knowledge base healthy
 
 ## Essential APIs
 
