@@ -85,6 +85,8 @@ app.post('/v1/endpoints', async (c) => {
     llmApiKey: data.llm_api_key ? await encrypt(data.llm_api_key, c.env.ENCRYPTION_SECRET) : null,
     llmModel: data.llm_model || null,
     webhookSecret,
+    externalModel: data.external_model || null,
+    externalApiKey: data.external_api_key ? await encrypt(data.external_api_key, c.env.ENCRYPTION_SECRET) : null,
     capabilities: JSON.stringify(data.capabilities ?? []),
     systemPrompt: data.system_prompt || null, skillMd,
     customDomain: data.custom_domain || null,
@@ -170,6 +172,8 @@ app.patch('/v1/endpoints/:slug', resolveEndpoint as any, async (c) => {
   if (data.llm_model !== undefined) updates.llmModel = data.llm_model
   if (data.webhook_url !== undefined) updates.webhookUrl = data.webhook_url
   if (data.llm_api_key !== undefined) updates.llmApiKey = data.llm_api_key ? await encrypt(data.llm_api_key, c.env.ENCRYPTION_SECRET) : null
+  if (data.external_model !== undefined) updates.externalModel = data.external_model
+  if (data.external_api_key !== undefined) updates.externalApiKey = data.external_api_key ? await encrypt(data.external_api_key, c.env.ENCRYPTION_SECRET) : null
 
   // Handle custom domain changes
   if (data.custom_domain !== undefined) {

@@ -342,20 +342,35 @@ You already have an agent. We just route queries to it via webhook. No documents
 
 Set `"mode": "external"` and `"webhook_url": "https://..."` (must be HTTPS).
 
-**Webhook contract -- what we send:**
+**Webhook contract (OpenAI chat completions format) -- what we send:**
 ```json
 POST {your_webhook_url}
 Content-Type: application/json
 
-{"query": "How do I authenticate?", "context": "optional context"}
+{
+  "model": "your-model-name",
+  "messages": [
+    {"role": "system", "content": "endpoint system prompt"},
+    {"role": "user", "content": "the query"}
+  ]
+}
 ```
 
 **What we expect back:**
 ```json
-{"answer": "Use Bearer tokens.", "sources": [{"document": "auth.md", "content": "..."}], "usage": {"input_tokens": 100, "output_tokens": 50}}
+{
+  "choices": [{"message": {"content": "the answer"}}],
+  "usage": {"prompt_tokens": 100, "completion_tokens": 50}
+}
 ```
 
-Only `answer` is required. `sources` and `usage` are optional. 30-second timeout.
+Only `choices[0].message.content` is required. `usage` is optional. 30-second timeout.
+
+Works out of the box with OpenClaw, Ollama, vLLM, LiteLLM, LocalAI, or any OpenAI-compatible endpoint.
+
+**Additional fields for external mode:**
+- `external_model` (optional) -- Model name sent in the request (e.g., `"llama3"`, `"openclaw:main"`). Defaults to `"default"`.
+- `external_api_key` (optional) -- Bearer token sent to the webhook. Stored encrypted.
 
 Document uploads are not supported for external endpoints -- queries go directly to your agent.
 

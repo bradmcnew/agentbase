@@ -46,6 +46,8 @@ export const CreateEndpointSchema = z.object({
   llm_provider: z.enum(['openai', 'anthropic']).optional(),
   llm_api_key: z.string().optional(),
   llm_model: z.string().optional(),
+  external_model: z.string().max(100).optional(),
+  external_api_key: z.string().optional(),
   custom_domain: z.string().max(253).regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/, 'Must be a valid hostname').optional(),
 }).superRefine((data, ctx) => {
   if (data.mode === ENDPOINT_MODE.EXTERNAL && !data.webhook_url) {
@@ -71,6 +73,8 @@ export const UpdateEndpointSchema = z.object({
   llm_model: z.string().optional(),
   webhook_url: z.string().url().optional(),
   llm_api_key: z.string().optional(),
+  external_model: z.string().max(100).optional(),
+  external_api_key: z.string().optional(),
   custom_domain: z.string().max(253).regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/, 'Must be a valid hostname').nullable().optional(),
 })
 

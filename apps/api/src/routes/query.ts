@@ -10,6 +10,7 @@ import { resolveEndpoint } from '../middleware/resolve-endpoint'
 import { errorResponse, serviceError, ErrorCode } from '../utils/errors'
 import { parseBody, safeJsonParse, parseIntParam } from '../utils/validate'
 import { signPayload } from '../utils/hmac'
+import { decrypt } from '../utils/encrypt'
 import { QueryEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE, PLAN_LIMITS } from '../types'
 import type { Env, AppVariables } from '../types'
 
@@ -45,17 +46,31 @@ app.post('/v1/endpoints/:slug/query', authWithCredits, resolveEndpoint as any, a
     let completionTokens = 0
 
     if (ep.mode === ENDPOINT_MODE.EXTERNAL) {
-      // ---- EXTERNAL MODE: forward to webhook ----
+      // ---- EXTERNAL MODE: OpenAI-compatible chat completions ----
       if (!ep.webhookUrl) {
         return errorResponse(c, 422, ErrorCode.QUERY_ERROR, 'External endpoint has no webhook URL configured')
       }
 
       const controller = new AbortController()
       const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS)
-      const webhookBody = JSON.stringify({ query: data.query, context: data.context })
 
-      // Sign the request so customers can verify it came from AgentPort
+      // Build OpenAI chat completions request
+      const systemPrompt = ep.systemPrompt || SYSTEM_PROMPT
+      const userContent = data.context ? `${data.context}\n\n${data.query}` : data.query
+      const webhookBody = JSON.stringify({
+        model: ep.externalModel || 'default',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userContent },
+        ],
+      })
+
+      // Headers: content type + HMAC signing + optional Bearer auth
       const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+      if (ep.externalApiKey) {
+        const apiKey = await decrypt(ep.externalApiKey, c.env.ENCRYPTION_SECRET)
+        headers['Authorization'] = `Bearer ${apiKey}`
+      }
       if (ep.webhookSecret) {
         const timestamp = Math.floor(Date.now() / 1000).toString()
         const signature = await signPayload(`${timestamp}.${webhookBody}`, ep.webhookSecret)
@@ -77,18 +92,15 @@ app.post('/v1/endpoints/:slug/query', authWithCredits, resolveEndpoint as any, a
           throw new Error(`Webhook returned ${res.status}: ${body}`)
         }
 
+        // Parse OpenAI chat completions response
         const webhookData = await res.json() as {
-          answer?: string
-          sources?: Array<{ document: string; content: string; relevance?: number }>
-          usage?: { input_tokens?: number; output_tokens?: number }
+          choices?: Array<{ message: { content: string } }>
+          usage?: { prompt_tokens?: number; completion_tokens?: number }
         }
 
-        answer = webhookData.answer || ''
-        sources = (webhookData.sources || []).map(s => ({
-          document: s.document, content: s.content, relevance: s.relevance || 0,
-        }))
-        promptTokens = webhookData.usage?.input_tokens || 0
-        completionTokens = webhookData.usage?.output_tokens || 0
+        answer = webhookData.choices?.[0]?.message?.content || ''
+        promptTokens = webhookData.usage?.prompt_tokens || 0
+        completionTokens = webhookData.usage?.completion_tokens || 0
       } catch (err) {
         clearTimeout(timeout)
         if (err instanceof Error && err.name === 'AbortError') {
