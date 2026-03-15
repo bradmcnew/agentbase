@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AgentPort — "Chatbase for agents." A platform where companies upload docs and get hosted knowledge endpoints that AI agents can query. The platform itself is agent-accessible via SKILL.md. Three endpoint modes: platform (we handle RAG + LLM), BYOK (customer's LLM key, our RAG), external (customer's webhook agent).
+AgentBase — "Chatbase for agents." A platform where companies upload docs and get hosted knowledge endpoints that AI agents can query. The platform itself is agent-accessible via SKILL.md. Three endpoint modes: platform (we handle RAG + LLM), BYOK (customer's LLM key, our RAG), external (customer's webhook agent).
 
 ## Commands
 
@@ -24,7 +24,7 @@ cd apps/api && CLOUDFLARE_API_TOKEN=... npx wrangler deploy
 
 # Test endpoints
 curl https://agentbase.axite.ai/health
-curl https://agentbase.axite.ai/.well-known/skill.md
+curl https://agentbase.axite.ai/skill.md
 ```
 
 ## Architecture
@@ -41,6 +41,7 @@ Request → CORS → Logger → dbMiddleware → [authMiddleware] → [resolveEn
 
 - `dbMiddleware` (every request): creates Drizzle instance, sets on context
 - `authMiddleware` (protected routes): validates Bearer token via Unkey API (handles key validation, expiration, per-key rate limiting)
+- `authWithCredits` (query route only): same as authMiddleware but deducts 1 Unkey credit per call for daily quota enforcement
 - `resolveEndpoint` (per-route, not global): loads endpoint by accountId + slug, applied as `resolveEndpoint as any` on individual route handlers
 
 ### Core Query Flow (`routes/query.ts`)
@@ -53,18 +54,20 @@ Platform/BYOK:  embed(query) → search(index, query, vector) → chatWithProvid
 - Embedding always uses our Azure OpenAI (even BYOK)
 - Chat routes through `services/llm-chat.ts` → `chatWithProvider()` which switches on `endpoint.mode`
 - Azure Search does hybrid search: BM25 + HNSW vector + semantic reranking (Standard tier)
+- Default system prompt is optimized for agent-to-agent responses (no markdown, no filler, structured output)
+- Endpoints can override with custom `system_prompt` via PATCH
 
 ### Three Endpoint Modes
 
 - **platform**: Our Azure handles everything. Customer picks model (`gpt-5-mini` default, `gpt-5-nano` lightweight). Creates Azure Search index on endpoint creation.
-- **byok**: Customer provides OpenAI/Anthropic key for LLM chat. We still handle embedding + search. Creates Azure Search index.
-- **external**: Customer provides webhook URL. No Azure Search index. No doc uploads. We forward `{query, context}`, expect `{answer}` back (30s timeout).
+- **byok**: Customer provides OpenAI/Anthropic key for LLM chat. We still handle embedding + search. Creates Azure Search index. Customer keys encrypted at rest via AES-256-GCM.
+- **external**: Customer provides webhook URL. No Azure Search index. No doc uploads. We forward `{query, context}`, expect `{answer}` back (30s timeout). Webhook requests signed with HMAC-SHA256.
 
 ### Key Service Files
 
-- `services/azure-search.ts` — Azure AI Search client. `AzureSearchClient.indexName(accountId, slug)` generates index names.
+- `services/azure-search.ts` — Azure AI Search client. `AzureSearchClient.indexName(accountId, slug)` generates index names. Supports `listDocuments(indexName, filename?)` with OData server-side filtering, `deleteDocuments(indexName, docIds)` for batch delete.
 - `services/azure-openai.ts` — Azure OpenAI client. `embedBatch()` for chunked docs (16 per batch). `chat()` accepts optional `modelOverride`.
-- `services/llm-chat.ts` — Routes `chatWithProvider()` to Azure (platform), OpenAI API (byok/openai), or Anthropic API (byok/anthropic).
+- `services/llm-chat.ts` — Routes `chatWithProvider()` to Azure (platform), OpenAI API (byok/openai), or Anthropic API (byok/anthropic). Decrypts BYOK keys at runtime.
 - `services/skill-gen.ts` — Generates per-endpoint SKILL.md + llms.txt. Uses `ENDPOINT_MODE` constants. Pass `mode` when calling.
 
 ### Shared Utilities
@@ -73,10 +76,12 @@ Platform/BYOK:  embed(query) → search(index, query, vector) → chatWithProvid
 - `utils/validate.ts` — `parseBody()` (Zod + error response), `safeJsonParse()`, `parseIntParam()`
 - `utils/id.ts` — `generateId()` (UUID without hyphens)
 - `utils/chunker.ts` — `chunkText()` (~2000 chars/chunk, 200 char overlap, breaks at paragraph/sentence boundaries)
+- `utils/encrypt.ts` — AES-256-GCM encryption/decryption for BYOK API keys at rest
+- `utils/hmac.ts` — HMAC-SHA256 signing for external mode webhook requests
 
 ### Static Assets
 
-Platform SKILL.md and llms.txt are static files in `apps/api/public/.well-known/`. Served by Cloudflare Workers Static Assets (configured in wrangler.toml `[assets]`). No route handler needed — Cloudflare serves them at the edge.
+Platform SKILL.md, HEARTBEAT.md, and llms.txt are static files in `apps/api/public/` and `apps/api/public/.well-known/`. Served by Cloudflare Workers Static Assets (configured in wrangler.toml `[assets]`). No route handler needed — Cloudflare serves them at the edge.
 
 ### Database
 
@@ -95,6 +100,8 @@ D1 (SQLite via Drizzle ORM). Three tables: `accounts`, `endpoints`, `interaction
 - Daily query quota (50/day free tier) uses Unkey credits with daily auto-refill. Query route uses `authWithCredits` middleware (direct @unkey/api with credit deduction), other routes use `authMiddleware` (@unkey/hono, no credit deduction).
 - Endpoint limit (3 active per free account) enforced via D1 COUNT in `routes/endpoints.ts`.
 - Plan limits defined in `PLAN_LIMITS` constant in `types.ts`.
+- PDF uploads accepted via `pdf` field (base64-encoded), extracted in-worker using `unpdf`. Max 10MB base64.
+- Document deletion by filename via `DELETE /v1/endpoints/{slug}/docs/{filename}` — uses Azure Search OData `$filter` for server-side filtering.
 - Azure error messages are never exposed to users — use `serviceError()` which logs internally and returns generic message
 
 ## Environment
@@ -105,10 +112,12 @@ AZURE_SEARCH_ENDPOINT, AZURE_SEARCH_API_KEY
 AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_API_KEY
 AZURE_OPENAI_EMBEDDING_DEPLOYMENT (text-embedding)
 AZURE_OPENAI_CHAT_DEPLOYMENT (gpt-5-mini)
+ENCRYPTION_SECRET (AES-256-GCM key for BYOK API key encryption)
 UNKEY_ROOT_KEY (Unkey root key for API key management)
 UNKEY_API_ID (Unkey API ID)
 ```
 
 Production URL: `https://agentbase.axite.ai`
+Legacy URL: `https://agentport-api.mcnewbrad.workers.dev` (still works)
 D1 database ID: `7e9dea6e-9a9f-4667-bb64-ab3ee46ef7f7`
 Cloudflare API token needed for deploys (set as `CLOUDFLARE_API_TOKEN` env var).
