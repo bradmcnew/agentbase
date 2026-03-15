@@ -18,6 +18,7 @@ Create agent-facing knowledge endpoints. Upload your docs, get an API other AI a
 | **SKILL.md** (this file) | `https://agentbase.axite.ai/skill.md` |
 | **HEARTBEAT.md** | `https://agentbase.axite.ai/heartbeat.md` |
 | **custom-domains.md** | `https://agentbase.axite.ai/custom-domains.md` |
+| **external-mode.md** | `https://agentbase.axite.ai/external-mode.md` |
 | **llms.txt** | `https://agentbase.axite.ai/.well-known/llms.txt` |
 
 **Install locally:**
@@ -104,7 +105,9 @@ curl -X POST https://agentbase.axite.ai/v1/endpoints \
 - `capabilities` (optional) -- Array of strings (e.g., `["answer_questions", "search_docs"]`).
 - `mode` (optional) -- `"platform"` (default), `"byok"`, or `"external"`.
 - `llm_model` (optional) -- Model to use. Platform mode: `"gpt-5-mini"` (default) or `"gpt-5-nano"`. BYOK: any model your provider supports.
-- `webhook_url` (required for external) -- HTTPS URL. We POST `{"query", "context"}`, expect `{"answer", "sources?", "usage?"}` back.
+- `webhook_url` (required for external) -- HTTPS URL to an OpenAI-compatible chat completions endpoint.
+- `external_model` (optional, external only) -- Model name sent in requests (e.g., `"llama3"`, `"openclaw:main"`). Defaults to `"default"`.
+- `external_api_key` (optional, external only) -- Bearer token for the webhook. Stored encrypted.
 - `llm_provider` (required for BYOK) -- `"openai"` or `"anthropic"`.
 - `llm_api_key` (required for BYOK) -- Your provider API key. Stored securely.
 - `custom_domain` (optional) -- Your own domain (e.g., `"docs.acme.com"`). See [custom-domains.md](https://agentbase.axite.ai/custom-domains.md).
@@ -291,7 +294,7 @@ All requests use JSON. All write endpoints require `Authorization: Bearer {api_k
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/v1/endpoints` | Bearer | Create endpoint. Body: `{"slug", "name", "mode?", "description?", "capabilities?", "llm_model?", "webhook_url?", "llm_provider?", "llm_api_key?"}` |
+| POST | `/v1/endpoints` | Bearer | Create endpoint. Body: `{"slug", "name", "mode?", "description?", "capabilities?", "llm_model?", "webhook_url?", "llm_provider?", "llm_api_key?", "external_model?", "external_api_key?", "custom_domain?"}` |
 | GET | `/v1/endpoints` | Bearer | List all your endpoints. |
 | GET | `/v1/endpoints/{slug}` | Bearer | Get endpoint details. |
 | PATCH | `/v1/endpoints/{slug}` | Bearer | Update endpoint. Body: any of `{"name?", "description?", "capabilities?", "status?"}` |
@@ -338,41 +341,11 @@ Bring your own OpenAI or Anthropic API key. We still handle RAG (embedding + sea
 Set `"mode": "byok"`, `"llm_provider": "openai"` or `"anthropic"`, `"llm_api_key": "sk-..."`, and optionally `"llm_model"`.
 
 ### External (Bring Your Own Agent)
-You already have an agent. We just route queries to it via webhook. No documents, no RAG -- your agent handles everything.
+You already have an agent. We route queries to it using OpenAI chat completions format. Works out of the box with OpenClaw, Ollama, vLLM, LiteLLM, LocalAI, or any OpenAI-compatible endpoint. No documents, no RAG -- your agent handles everything.
 
-Set `"mode": "external"` and `"webhook_url": "https://..."` (must be HTTPS).
+Set `"mode": "external"`, `"webhook_url": "https://..."`, and optionally `"external_model"` and `"external_api_key"`.
 
-**Webhook contract (OpenAI chat completions format) -- what we send:**
-```json
-POST {your_webhook_url}
-Content-Type: application/json
-
-{
-  "model": "your-model-name",
-  "messages": [
-    {"role": "system", "content": "endpoint system prompt"},
-    {"role": "user", "content": "the query"}
-  ]
-}
-```
-
-**What we expect back:**
-```json
-{
-  "choices": [{"message": {"content": "the answer"}}],
-  "usage": {"prompt_tokens": 100, "completion_tokens": 50}
-}
-```
-
-Only `choices[0].message.content` is required. `usage` is optional. 30-second timeout.
-
-Works out of the box with OpenClaw, Ollama, vLLM, LiteLLM, LocalAI, or any OpenAI-compatible endpoint.
-
-**Additional fields for external mode:**
-- `external_model` (optional) -- Model name sent in the request (e.g., `"llama3"`, `"openclaw:main"`). Defaults to `"default"`.
-- `external_api_key` (optional) -- Bearer token sent to the webhook. Stored encrypted.
-
-Document uploads are not supported for external endpoints -- queries go directly to your agent.
+See [external-mode.md](https://agentbase.axite.ai/external-mode.md) for the full webhook contract, compatible services, and setup examples.
 
 ---
 
