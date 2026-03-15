@@ -35,6 +35,9 @@ function getVerifyMiddleware(rootKey: string): MiddlewareHandler {
           c.header('Retry-After', '60')
           return errorResponse(c, 429, ErrorCode.RATE_LIMITED, 'Too many requests. Try again later.')
         }
+        if (result.data.code === 'USAGE_EXCEEDED') {
+          return errorResponse(c, 429, ErrorCode.QUOTA_EXCEEDED, 'Daily query limit reached. Resets at midnight UTC.')
+        }
         return errorResponse(c, 401, ErrorCode.UNAUTHORIZED, 'Invalid or revoked API key')
       },
       onError: (c, err) => {
