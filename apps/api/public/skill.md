@@ -17,6 +17,7 @@ Create agent-facing knowledge endpoints. Upload your docs, get an API other AI a
 |------|-----|
 | **SKILL.md** (this file) | `https://agentbase.axite.ai/skill.md` |
 | **HEARTBEAT.md** | `https://agentbase.axite.ai/heartbeat.md` |
+| **custom-domains.md** | `https://agentbase.axite.ai/custom-domains.md` |
 | **llms.txt** | `https://agentbase.axite.ai/.well-known/llms.txt` |
 
 **Install locally:**
@@ -106,7 +107,7 @@ curl -X POST https://agentbase.axite.ai/v1/endpoints \
 - `webhook_url` (required for external) -- HTTPS URL. We POST `{"query", "context"}`, expect `{"answer", "sources?", "usage?"}` back.
 - `llm_provider` (required for BYOK) -- `"openai"` or `"anthropic"`.
 - `llm_api_key` (required for BYOK) -- Your provider API key. Stored securely.
-- `custom_domain` (optional) -- Your own domain (e.g., `"docs.acme.com"`). See Custom Domains below.
+- `custom_domain` (optional) -- Your own domain (e.g., `"docs.acme.com"`). See [custom-domains.md](https://agentbase.axite.ai/custom-domains.md).
 
 **Response:**
 ```json
@@ -357,65 +358,6 @@ Content-Type: application/json
 Only `answer` is required. `sources` and `usage` are optional. 30-second timeout.
 
 Document uploads are not supported for external endpoints -- queries go directly to your agent.
-
----
-
-## Custom Domains
-
-Make your endpoint look like your own product. Instead of `agentbase.axite.ai/v1/e/{id}/skill.md`, agents see `docs.acme.com/skill.md`.
-
-### Set up a custom domain
-
-1. Create (or update) your endpoint with `custom_domain`:
-```bash
-curl -X POST https://agentbase.axite.ai/v1/endpoints \
-  -H "Authorization: Bearer $AGENTBASE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"slug": "api-docs", "name": "Acme Docs", "custom_domain": "docs.acme.com"}'
-```
-
-2. The response includes DNS instructions:
-```json
-{
-  "endpoint": {
-    "id": "...",
-    "custom_domain": "docs.acme.com",
-    "cname_target": "cdn.agentbase.axite.ai",
-    "dns_status": "pending",
-    "dns_instructions": "Add a CNAME record: docs.acme.com -> cdn.agentbase.axite.ai"
-  }
-}
-```
-
-3. Add the CNAME record to your DNS. SSL is provisioned automatically (usually < 5 minutes).
-
-4. Your endpoint is now live at `https://docs.acme.com/skill.md`.
-
-### Custom domain URL structure
-
-On a custom domain, URLs are simplified -- no `/v1/endpoints/{slug}/` prefix:
-
-| Path | Description |
-|------|-------------|
-| `GET /skill.md` | Endpoint's SKILL.md |
-| `GET /llms.txt` | Endpoint's llms.txt |
-| `POST /query` | Query the endpoint |
-| `GET /docs` | List documents |
-| `POST /docs` | Upload document |
-| `DELETE /docs/{filename}` | Delete document |
-| `GET /interactions` | List past queries |
-
-Auth (Bearer token) is still required for all write operations.
-
-### Remove a custom domain
-
-Update the endpoint with `custom_domain: null`:
-```bash
-curl -X PATCH https://agentbase.axite.ai/v1/endpoints/api-docs \
-  -H "Authorization: Bearer $AGENTBASE_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"custom_domain": null}'
-```
 
 ---
 
