@@ -54,24 +54,11 @@ async function resolveByHostname(c: any, next: any) {
   }
 
   const db = c.get('db')
-  let ep
-
-  // Check custom domain first (takes priority)
-  ;[ep] = await db
+  const [ep] = await db
     .select()
     .from(endpoints)
     .where(eq(endpoints.customDomain, hostname))
     .limit(1)
-
-  // Then check wildcard subdomain (e.g., acme.agentbase.axite.ai -> slug "acme")
-  if (!ep && hostname.endsWith('.agentbase.axite.ai')) {
-    const slug = hostname.split('.')[0]
-    ;[ep] = await db
-      .select()
-      .from(endpoints)
-      .where(eq(endpoints.slug, slug))
-      .limit(1)
-  }
 
   if (!ep || ep.status === ENDPOINT_STATUS.ARCHIVED) {
     return errorResponse(c, 404, ErrorCode.NOT_FOUND, 'No endpoint configured for this domain')

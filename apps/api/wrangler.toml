@@ -5,8 +5,7 @@ compatibility_flags = ["nodejs_compat"]
 workers_dev = false
 
 routes = [
-  { pattern = "agentbase.axite.ai", custom_domain = true },
-  { pattern = "*.agentbase.axite.ai/*", zone_name = "axite.ai" }
+  { pattern = "agentbase.axite.ai", custom_domain = true }
 ]
 
 [assets]

@@ -125,6 +125,6 @@ CF_API_TOKEN (Cloudflare API token with DNS + Custom Hostname permissions)
 ```
 
 Production URL: `https://agentbase.axite.ai`
-Custom domains: customers can set `custom_domain` on endpoints (CF for SaaS auto-provisions SSL). Wildcard subdomain routing (`{slug}.agentbase.axite.ai`) exists in code but hostnames are NOT auto-provisioned (to prevent quota abuse).
+Custom domains: customers can set `custom_domain` on endpoints (CF for SaaS auto-provisions SSL). Default URL is path-based: `/v1/e/{id}/skill.md`.
 D1 database ID: `7e9dea6e-9a9f-4667-bb64-ab3ee46ef7f7`
 Cloudflare API token needed for deploys (set as `CLOUDFLARE_API_TOKEN` env var).
