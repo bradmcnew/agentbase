@@ -23,13 +23,15 @@ export function generateSkillMd(config: EndpointConfig): string {
 
   const desc = config.description || `Knowledge base endpoint for ${config.name}. Query via REST API with semantic search. Returns answers grounded in uploaded documents.`
 
-  // Custom domain endpoints use simplified URLs (no /v1/endpoints/{slug}/ prefix)
+  // Custom domain or wildcard subdomain: use simplified URLs
+  // Priority: custom domain > wildcard subdomain > legacy /v1/e/{id}/ path
   const hasCustomDomain = !!config.customDomain
-  const skillBaseUrl = hasCustomDomain ? `https://${config.customDomain}` : config.baseUrl
-  const queryPath = hasCustomDomain ? `${skillBaseUrl}/query` : `${config.baseUrl}/v1/endpoints/${config.slug}/query`
-  const skillMdUrl = hasCustomDomain ? `${skillBaseUrl}/skill.md` : `${config.baseUrl}/v1/e/${config.endpointId}/skill.md`
-  const llmsTxtUrl = hasCustomDomain ? `${skillBaseUrl}/llms.txt` : `${config.baseUrl}/v1/e/${config.endpointId}/llms.txt`
-  const hostname = hasCustomDomain ? config.customDomain! : new URL(config.baseUrl).hostname
+  const subdomainBase = `https://${config.slug}.agentbase.axite.ai`
+  const skillBaseUrl = hasCustomDomain ? `https://${config.customDomain}` : subdomainBase
+  const queryPath = `${skillBaseUrl}/query`
+  const skillMdUrl = `${skillBaseUrl}/skill.md`
+  const llmsTxtUrl = `${skillBaseUrl}/llms.txt`
+  const hostname = hasCustomDomain ? config.customDomain! : `${config.slug}.agentbase.axite.ai`
 
   return `---
 name: ${config.slug}
@@ -100,8 +102,9 @@ ${caps}
 export function generateLlmsTxt(config: EndpointConfig): string {
   const desc = config.description || `Knowledge base for ${config.name}.`
   const hasCustomDomain = !!config.customDomain
-  const skillMdUrl = hasCustomDomain ? `https://${config.customDomain}/skill.md` : `${config.baseUrl}/v1/e/${config.endpointId}/skill.md`
-  const queryUrl = hasCustomDomain ? `https://${config.customDomain}/query` : `${config.baseUrl}/v1/endpoints/${config.slug}/query`
+  const base = hasCustomDomain ? `https://${config.customDomain}` : `https://${config.slug}.agentbase.axite.ai`
+  const skillMdUrl = `${base}/skill.md`
+  const queryUrl = `${base}/query`
 
   return `# ${config.name}
 

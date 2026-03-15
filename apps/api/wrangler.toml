@@ -2,10 +2,11 @@ name = "agentport-api"
 main = "src/index.ts"
 compatibility_date = "2025-03-13"
 compatibility_flags = ["nodejs_compat"]
-workers_dev = true
+workers_dev = false
 
 routes = [
-  { pattern = "agentbase.axite.ai", custom_domain = true }
+  { pattern = "agentbase.axite.ai", custom_domain = true },
+  { pattern = "*.agentbase.axite.ai/*", zone_name = "axite.ai" }
 ]
 
 [assets]

@@ -17,9 +17,6 @@ importers:
       '@unkey/api':
         specifier: ^2.3.1
         version: 2.3.1
-      '@unkey/hono':
-        specifier: ^2.0.0
-        version: 2.0.0(hono@4.12.7)
       drizzle-orm:
         specifier: ^0.39.0
         version: 0.39.3(@cloudflare/workers-types@4.20260313.1)
@@ -723,11 +720,6 @@ packages:
   '@unkey/api@2.3.1':
     resolution: {integrity: sha512-4h9yjv57TR4nKABQ8uYYSHfFoAQoqxkcSorS/2q2WVfHCLLgE2rbTQj36bhM04F1lLdwpxHCLXyOSOjnu+OBkQ==}
 
-  '@unkey/hono@2.0.0':
-    resolution: {integrity: sha512-yRXKZXxORej+mbOThOAbyn6voEXzeDTUqnqJ+Ok2neWFheiU9vQWPqZQoSvcfzQsseXnOn1GkheOWXBNiGGfsg==}
-    peerDependencies:
-      hono: ^4.6.3
-
   blake3-wasm@2.1.5:
     resolution: {integrity: sha512-F1+K8EbfOZE49dtoPtmxUQrpXaBIl3ICvasLh+nJta0xkz+9kF/7uet9fLnwKqhDrmj6g+6K3Tw9yQPUg2ka5g==}
 
@@ -1419,11 +1411,6 @@ snapshots:
   '@unkey/api@2.3.1':
     dependencies:
       zod: 3.25.76
-
-  '@unkey/hono@2.0.0(hono@4.12.7)':
-    dependencies:
-      '@unkey/api': 2.3.1
-      hono: 4.12.7
 
   blake3-wasm@2.1.5: {}
 

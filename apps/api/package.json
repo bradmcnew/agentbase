@@ -12,7 +12,6 @@
   },
   "dependencies": {
     "@unkey/api": "^2.3.1",
-    "@unkey/hono": "^2.0.0",
     "drizzle-orm": "^0.39.0",
     "hono": "^4.7.0",
     "unpdf": "^1.4.0",

@@ -36,14 +36,15 @@ app.post('/v1/endpoints', async (c) => {
       `Endpoint limit reached (${PLAN_LIMITS.free.maxEndpoints} active endpoints). Archive unused endpoints or upgrade.`)
   }
 
+  // Slugs must be globally unique (used as wildcard subdomains)
   const [existing] = await db
     .select({ id: endpoints.id })
     .from(endpoints)
-    .where(and(eq(endpoints.accountId, auth.accountId), eq(endpoints.slug, data.slug)))
+    .where(eq(endpoints.slug, data.slug))
     .limit(1)
 
   if (existing) {
-    return errorResponse(c, 409, ErrorCode.CONFLICT, `Endpoint with slug "${data.slug}" already exists`)
+    return errorResponse(c, 409, ErrorCode.CONFLICT, `Slug "${data.slug}" is already taken. Choose a different slug.`)
   }
 
   const endpointId = generateId()
@@ -89,13 +90,18 @@ app.post('/v1/endpoints', async (c) => {
     customDomain: data.custom_domain || null,
   })
 
-  // Provision custom hostname with Cloudflare for SaaS
+  // Provision custom hostnames with Cloudflare for SaaS
+  // Always create subdomain hostname ({slug}.agentbase.axite.ai)
+  c.executionCtx.waitUntil(
+    createCustomHostname(c.env.CF_ZONE_ID, c.env.CF_API_TOKEN, `${data.slug}.agentbase.axite.ai`)
+      .catch(err => console.error('Subdomain hostname creation failed:', err))
+  )
+  // Create custom domain hostname if provided
   if (data.custom_domain) {
     try {
       await createCustomHostname(c.env.CF_ZONE_ID, c.env.CF_API_TOKEN, data.custom_domain)
     } catch (err) {
       console.error('Custom hostname creation failed:', err)
-      // Don't fail the endpoint creation -- domain can be retried via PATCH
     }
   }
 
@@ -106,7 +112,9 @@ app.post('/v1/endpoints', async (c) => {
       capabilities: data.capabilities ?? [],
       mode,
       status: ENDPOINT_STATUS.ACTIVE,
-      skill_md_url: `${baseUrl}/v1/e/${endpointId}/skill.md`,
+      skill_md_url: data.custom_domain
+        ? `https://${data.custom_domain}/skill.md`
+        : `https://${data.slug}.agentbase.axite.ai/skill.md`,
       created_at: new Date().toISOString(),
       ...(webhookSecret ? { webhook_secret: webhookSecret } : {}),
       ...(data.custom_domain ? {
@@ -217,7 +225,12 @@ app.delete('/v1/endpoints/:slug', resolveEndpoint as any, async (c) => {
 
   await db.update(endpoints).set({ status: ENDPOINT_STATUS.ARCHIVED, customDomain: null }).where(eq(endpoints.id, ep.id))
 
-  // Clean up custom hostname
+  // Clean up custom hostnames (subdomain + custom domain)
+  c.executionCtx.waitUntil(
+    deleteCustomHostname(c.env.CF_ZONE_ID, c.env.CF_API_TOKEN, `${ep.slug}.agentbase.axite.ai`).catch(err => {
+      console.error('Failed to delete subdomain hostname:', err)
+    })
+  )
   if (ep.customDomain) {
     c.executionCtx.waitUntil(
       deleteCustomHostname(c.env.CF_ZONE_ID, c.env.CF_API_TOKEN, ep.customDomain).catch(err => {

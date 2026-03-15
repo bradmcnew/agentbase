@@ -40,8 +40,8 @@ Request → CORS → Logger → dbMiddleware → [authMiddleware] → [resolveEn
 ```
 
 - `dbMiddleware` (every request): creates Drizzle instance, sets on context
-- `authMiddleware` (protected routes): validates Bearer token via Unkey API (handles key validation, expiration, per-key rate limiting)
-- `authWithCredits` (query route only): same as authMiddleware but deducts 1 Unkey credit per call for daily quota enforcement
+- `authMiddleware` (protected routes): validates Bearer token via `@unkey/api` `verifyKey`. Allows `USAGE_EXCEEDED` through (non-query routes still work when credits exhausted).
+- `authWithCredits` (query route only): same as authMiddleware but passes `credits: { cost: 1 }` to deduct 1 credit. Blocks on `USAGE_EXCEEDED`.
 - `resolveEndpoint` (per-route, not global): loads endpoint by accountId + slug, applied as `resolveEndpoint as any` on individual route handlers
 
 ### Core Query Flow (`routes/query.ts`)
@@ -102,7 +102,7 @@ D1 (SQLite via Drizzle ORM). Three tables: `accounts`, `endpoints`, `interaction
 - Interactions are logged via `c.executionCtx.waitUntil()` — fire and forget, don't block response
 - API keys are managed by Unkey — key creation in `routes/accounts.ts` via `@unkey/api`, verification in `middleware/auth.ts`
 - Per-key rate limiting is handled by Unkey (set on key creation: 60 req/min). Only `POST /v1/accounts` uses in-memory IP rate limiting.
-- Daily query quota (50/day free tier) uses Unkey credits with daily auto-refill. Query route uses `authWithCredits` middleware (direct @unkey/api with credit deduction), other routes use `authMiddleware` (@unkey/hono, no credit deduction).
+- Daily query quota (50/day free tier) uses Unkey credits with daily auto-refill. Query route uses `authWithCredits` middleware (direct @unkey/api with credit deduction), other routes use `authMiddleware` (no credit deduction, allows USAGE_EXCEEDED through).
 - Endpoint limit (3 active per free account) enforced via D1 COUNT in `routes/endpoints.ts`.
 - Plan limits defined in `PLAN_LIMITS` constant in `types.ts`.
 - PDF uploads accepted via `pdf` field (base64-encoded), extracted in-worker using `unpdf`. Max 10MB base64.
@@ -125,6 +125,6 @@ CF_API_TOKEN (Cloudflare API token with DNS + Custom Hostname permissions)
 ```
 
 Production URL: `https://agentbase.axite.ai`
-Legacy URL: `https://agentport-api.mcnewbrad.workers.dev` (still works)
+Wildcard subdomains: `https://{slug}.agentbase.axite.ai` (every endpoint gets one automatically)
 D1 database ID: `7e9dea6e-9a9f-4667-bb64-ab3ee46ef7f7`
 Cloudflare API token needed for deploys (set as `CLOUDFLARE_API_TOKEN` env var).

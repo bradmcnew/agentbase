@@ -50,15 +50,28 @@ const app = new Hono<{ Bindings: Env; Variables: AppVariables & { customEndpoint
 async function resolveByHostname(c: any, next: any) {
   const hostname = new URL(c.req.url).hostname
   if (hostname === PLATFORM_HOSTNAME || hostname.endsWith('.workers.dev')) {
-    return // Not a custom domain request -- skip
+    return // Platform request -- skip, let standard routes handle it
   }
 
   const db = c.get('db')
-  const [ep] = await db
+  let ep
+
+  // Check custom domain first (takes priority)
+  ;[ep] = await db
     .select()
     .from(endpoints)
     .where(eq(endpoints.customDomain, hostname))
     .limit(1)
+
+  // Then check wildcard subdomain (e.g., acme.agentbase.axite.ai -> slug "acme")
+  if (!ep && hostname.endsWith('.agentbase.axite.ai')) {
+    const slug = hostname.split('.')[0]
+    ;[ep] = await db
+      .select()
+      .from(endpoints)
+      .where(eq(endpoints.slug, slug))
+      .limit(1)
+  }
 
   if (!ep || ep.status === ENDPOINT_STATUS.ARCHIVED) {
     return errorResponse(c, 404, ErrorCode.NOT_FOUND, 'No endpoint configured for this domain')
