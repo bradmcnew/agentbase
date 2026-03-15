@@ -63,12 +63,17 @@ Platform/BYOK:  embed(query) → search(index, query, vector) → chatWithProvid
 - **byok**: Customer provides OpenAI/Anthropic key for LLM chat. We still handle embedding + search. Creates Azure Search index. Customer keys encrypted at rest via AES-256-GCM.
 - **external**: Customer provides webhook URL. No Azure Search index. No doc uploads. We forward `{query, context}`, expect `{answer}` back (30s timeout). Webhook requests signed with HMAC-SHA256.
 
+### Custom Domains
+
+Endpoints can have a `custom_domain` (e.g., `docs.acme.com`). Cloudflare for SaaS handles SSL provisioning. Customer adds a CNAME to `cdn.agentbase.axite.ai`. Hostname-based routing in `routes/custom-domain.ts` resolves endpoint by `custom_domain` column. Simplified URL structure on custom domains (`/skill.md`, `/query`, `/docs` instead of `/v1/endpoints/{slug}/...`).
+
 ### Key Service Files
 
 - `services/azure-search.ts` — Azure AI Search client. `AzureSearchClient.indexName(accountId, slug)` generates index names. Supports `listDocuments(indexName, filename?)` with OData server-side filtering, `deleteDocuments(indexName, docIds)` for batch delete.
 - `services/azure-openai.ts` — Azure OpenAI client. `embedBatch()` for chunked docs (16 per batch). `chat()` accepts optional `modelOverride`.
 - `services/llm-chat.ts` — Routes `chatWithProvider()` to Azure (platform), OpenAI API (byok/openai), or Anthropic API (byok/anthropic). Decrypts BYOK keys at runtime.
-- `services/skill-gen.ts` — Generates per-endpoint SKILL.md + llms.txt. Uses `ENDPOINT_MODE` constants. Pass `mode` when calling.
+- `services/skill-gen.ts` — Generates per-endpoint SKILL.md + llms.txt. Uses `ENDPOINT_MODE` constants. Pass `mode` and `customDomain` when calling.
+- `services/custom-domains.ts` — Cloudflare for SaaS API client. Creates/deletes custom hostnames.
 
 ### Shared Utilities
 
@@ -115,6 +120,8 @@ AZURE_OPENAI_CHAT_DEPLOYMENT (gpt-5-mini)
 ENCRYPTION_SECRET (AES-256-GCM key for BYOK API key encryption)
 UNKEY_ROOT_KEY (Unkey root key for API key management)
 UNKEY_API_ID (Unkey API ID)
+CF_ZONE_ID (Cloudflare zone ID for axite.ai)
+CF_API_TOKEN (Cloudflare API token with DNS + Custom Hostname permissions)
 ```
 
 Production URL: `https://agentbase.axite.ai`
