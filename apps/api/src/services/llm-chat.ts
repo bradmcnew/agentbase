@@ -30,12 +30,12 @@ export async function chatWithProvider(
     // Decrypt the customer's API key (stored encrypted at rest)
     const apiKey = await decrypt(endpoint.llmApiKey, env.ENCRYPTION_SECRET)
     if (endpoint.llmProvider === 'anthropic') {
-      return anthropicChat(apiKey, endpoint.llmModel || 'claude-sonnet-4-20250514', systemPrompt, context, query)
+      return anthropicChat(apiKey, endpoint.llmModel || 'claude-sonnet-4-6', systemPrompt, context, query)
     }
     if (endpoint.llmProvider === 'gemini') {
-      return openaiCompatibleChat(apiKey, 'https://generativelanguage.googleapis.com/v1beta/openai', endpoint.llmModel || 'gemini-2.5-flash', systemPrompt, context, query)
+      return openaiCompatibleChat(apiKey, 'https://generativelanguage.googleapis.com/v1beta/openai', endpoint.llmModel || 'gemini-3-flash', systemPrompt, context, query)
     }
-    return openaiCompatibleChat(apiKey, 'https://api.openai.com/v1', endpoint.llmModel || 'gpt-4o', systemPrompt, context, query)
+    return openaiCompatibleChat(apiKey, 'https://api.openai.com/v1', endpoint.llmModel || 'gpt-5-chat-latest', systemPrompt, context, query)
   }
 
   // Platform mode — use our Azure with optional model override
