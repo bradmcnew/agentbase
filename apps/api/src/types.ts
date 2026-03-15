@@ -71,7 +71,7 @@ export const UpdateEndpointSchema = z.object({
   system_prompt: z.string().max(5000).optional(),
   status: z.enum([ENDPOINT_STATUS.ACTIVE, ENDPOINT_STATUS.PAUSED]).optional(),
   llm_model: z.string().optional(),
-  webhook_url: z.string().url().optional(),
+  webhook_url: z.string().url().refine(u => u.startsWith('https://'), { message: 'webhook_url must use HTTPS' }).optional(),
   llm_api_key: z.string().optional(),
   external_model: z.string().max(100).optional(),
   external_api_key: z.string().optional(),

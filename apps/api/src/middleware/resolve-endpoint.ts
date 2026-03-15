@@ -1,5 +1,5 @@
 import { Context, Next } from 'hono'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, ne } from 'drizzle-orm'
 import { DrizzleD1Database } from 'drizzle-orm/d1'
 import { endpoints } from '../db/schema'
 import { errorResponse, ErrorCode } from '../utils/errors'
@@ -32,7 +32,7 @@ export async function resolveEndpoint(
   const [endpoint] = await db
     .select()
     .from(endpoints)
-    .where(and(eq(endpoints.accountId, auth.accountId), eq(endpoints.slug, slug)))
+    .where(and(eq(endpoints.accountId, auth.accountId), eq(endpoints.slug, slug), ne(endpoints.status, 'archived')))
     .limit(1)
 
   if (!endpoint) {

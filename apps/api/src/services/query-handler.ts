@@ -126,7 +126,7 @@ export async function handleQuery(c: Context, ep: EndpointRow): Promise<Response
         clearTimeout(timeout)
 
         if (!res.ok) {
-          const body = await res.text()
+          const body = (await res.text()).slice(0, 200)
           throw new Error(`Webhook returned ${res.status}: ${body}`)
         }
 
