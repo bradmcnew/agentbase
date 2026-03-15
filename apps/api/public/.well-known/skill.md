@@ -82,7 +82,7 @@ curl -X POST https://agentbase.axite.ai/v1/endpoints \
   -d '{"slug": "api-docs", "name": "Acme API Docs", "description": "Answers questions about the Acme API"}'
 ```
 
-**BYOK mode** -- bring your own OpenAI or Anthropic key. We handle RAG, you pay for the LLM:
+**BYOK mode** -- bring your own OpenAI, Anthropic, or Gemini key. We handle RAG, you pay for the LLM:
 ```bash
 curl -X POST https://agentbase.axite.ai/v1/endpoints \
   -H "Authorization: Bearer $AGENTBASE_API_KEY" \
