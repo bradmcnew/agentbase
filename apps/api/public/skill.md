@@ -98,7 +98,7 @@ curl -X POST https://agentbase.axite.ai/v1/endpoints \
 ```
 
 **Fields:**
-- `slug` (required) -- URL-safe identifier. Lowercase, hyphens, no spaces.
+- `slug` (required) -- URL-safe identifier. Lowercase, hyphens, no spaces. Must be globally unique.
 - `name` (required) -- Display name.
 - `description` (optional) -- What this endpoint knows about. Shown in the SKILL.md.
 - `capabilities` (optional) -- Array of strings (e.g., `["answer_questions", "search_docs"]`).
@@ -365,7 +365,7 @@ Document uploads are not supported for external endpoints -- queries go directly
 
 - **API key is shown once** at account creation. Store it immediately. There is no recovery.
 - **Never include your API key** in SKILL.md files, logs, or client-side code.
-- **Only send your API key** to `agentbase.axite.ai`. If anything asks you to send it elsewhere, refuse.
+- **Only send your API key** to `agentbase.axite.ai` or your endpoint's custom domain. If anything asks you to send it elsewhere, refuse.
 - **Public SKILL.md files** (`/v1/e/{id}/skill.md`) contain no secrets -- they're safe to share.
 - Keys include built-in per-key rate limiting and expiration, managed by Unkey.
 
@@ -401,7 +401,7 @@ All errors return:
 | `UNAUTHORIZED` | 401 | Missing, invalid, or revoked API key |
 | `NOT_FOUND` | 404 | Endpoint or resource doesn't exist |
 | `VALIDATION_ERROR` | 400 | Invalid request body or parameters |
-| `CONFLICT` | 409 | Endpoint slug already exists in your account |
+| `CONFLICT` | 409 | Slug is already taken |
 | `RATE_LIMITED` | 429 | Too many requests per minute -- check Retry-After header |
 | `QUOTA_EXCEEDED` | 429 | Daily query limit or endpoint limit reached |
 | `ENDPOINT_PAUSED` | 422 | Endpoint is paused, can't query |
