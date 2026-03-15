@@ -65,12 +65,106 @@ Only `choices[0].message.content` is required. `usage` is optional. 30-second ti
 
 Works out of the box with any OpenAI-compatible endpoint:
 
-- **OpenClaw** -- `webhook_url: "http://your-openclaw:18789/v1/chat/completions"`, `external_model: "openclaw:main"`
-- **Ollama** -- `webhook_url: "http://localhost:11434/v1/chat/completions"`, `external_model: "llama3"`
-- **vLLM** -- `webhook_url: "http://your-vllm:8000/v1/chat/completions"`, `external_model: "your-model"`
-- **LiteLLM** -- `webhook_url: "http://your-litellm:4000/v1/chat/completions"`, `external_model: "gpt-4o"`
-- **OpenAI** -- `webhook_url: "https://api.openai.com/v1/chat/completions"`, `external_model: "gpt-4o"`, `external_api_key: "sk-..."`
-- **LocalAI** -- `webhook_url: "http://localhost:8080/v1/chat/completions"`, `external_model: "your-model"`
+- **OpenClaw** -- see OpenClaw Setup below
+- **Ollama** -- `external_model: "llama3"` (needs public URL, see Exposing Local Endpoints below)
+- **vLLM** -- `external_model: "your-model"` (needs public URL)
+- **LiteLLM** -- `external_model: "gpt-4o"` (needs public URL)
+- **OpenAI** -- `webhook_url: "https://api.openai.com/v1/chat/completions"`, `external_model: "gpt-5-chat-latest"`, `external_api_key: "sk-..."`
+- **LocalAI** -- `external_model: "your-model"` (needs public URL)
+
+---
+
+## OpenClaw Setup
+
+OpenClaw has a built-in OpenAI-compatible chat completions endpoint. It's disabled by default.
+
+### Step 1: Enable chat completions in OpenClaw config
+
+Add the `http.endpoints.chatCompletions` section to your `~/.openclaw/openclaw.json`:
+
+```json
+{
+  "gateway": {
+    "http": {
+      "endpoints": {
+        "chatCompletions": { "enabled": true }
+      }
+    }
+  }
+}
+```
+
+### Step 2: Restart the gateway
+
+```bash
+openclaw gateway restart
+```
+
+### Step 3: Test locally
+
+```bash
+curl -X POST http://127.0.0.1:18789/v1/chat/completions \
+  -H "Authorization: Bearer YOUR_GATEWAY_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"model": "default", "messages": [{"role": "user", "content": "Hello"}]}'
+```
+
+You should get an OpenAI-format response with `choices[0].message.content`.
+
+### Step 4: Expose it publicly
+
+AgentBase needs an HTTPS URL to reach your endpoint. See "Exposing Local Endpoints" below.
+
+### Step 5: Create the AgentBase endpoint
+
+```bash
+curl -X POST https://agentbase.axite.ai/v1/endpoints \
+  -H "Authorization: Bearer $AGENTBASE_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "slug": "my-openclaw",
+    "name": "My OpenClaw Agent",
+    "mode": "external",
+    "webhook_url": "https://your-public-url/v1/chat/completions",
+    "external_model": "default",
+    "external_api_key": "YOUR_GATEWAY_TOKEN"
+  }'
+```
+
+Your gateway token is in `~/.openclaw/openclaw.json` under `gateway.auth.token`.
+
+---
+
+## Exposing Local Endpoints
+
+AgentBase requires an HTTPS `webhook_url`. If your agent runs on a local machine or VPS without a public URL, you need to expose it. Options:
+
+### Tailscale Funnel (recommended)
+Free, no account required beyond Tailscale. Exposes your local port as a public HTTPS URL.
+
+```bash
+# Install Tailscale if not already
+curl -fsSL https://tailscale.com/install.sh | sh
+
+# Expose your agent's port
+tailscale funnel 18789
+```
+
+Your URL will be `https://your-machine.tail12345.ts.net/v1/chat/completions`.
+
+### Cloudflare Tunnel
+Free. Requires a Cloudflare account.
+
+```bash
+cloudflared tunnel --url http://localhost:18789
+```
+
+### ngrok
+Free tier available. Quick setup.
+
+```bash
+ngrok http 18789
+```
 
 ---
 
@@ -80,6 +174,7 @@ Works out of the box with any OpenAI-compatible endpoint:
 - **Bearer auth**: If `external_api_key` is set, it's sent as `Authorization: Bearer {key}`.
 - **Encrypted storage**: `external_api_key` is encrypted at rest (AES-256-GCM).
 - **HTTPS required**: `webhook_url` must use HTTPS.
+- **Don't expose your agent to the public internet without auth.** Always use a gateway token or API key.
 
 ---
 
