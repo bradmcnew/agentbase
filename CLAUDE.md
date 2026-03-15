@@ -41,10 +41,17 @@ Request → CORS → Logger → dbMiddleware → [authMiddleware] → [resolveEn
 
 - `dbMiddleware` (every request): creates Drizzle instance, sets on context
 - `authMiddleware` (protected routes): validates Bearer token via `@unkey/api` `verifyKey`. Allows `USAGE_EXCEEDED` through (non-query routes still work when credits exhausted).
-- `authWithCredits` (query route only): same as authMiddleware but passes `credits: { cost: 1 }` to deduct 1 credit. Blocks on `USAGE_EXCEEDED`.
 - `resolveEndpoint` (per-route, not global): loads endpoint by accountId + slug, applied as `resolveEndpoint as any` on individual route handlers
 
-### Core Query Flow (`routes/query.ts`)
+### Query Routes (Public)
+
+All queries go through public endpoints — no API key needed:
+- `POST /v1/e/{id}/query` — by endpoint ID (standard path)
+- `POST /query` — on custom domains
+
+Both call `handleQuery()` in `services/query-handler.ts`. Daily quota (50/day free) tracked via D1 counter on `endpoints` table (atomic reset+increment). IP rate limiting via Cloudflare Rate Limiting Rules (edge-level, not in-memory).
+
+### Core Query Flow (`services/query-handler.ts`)
 
 ```
 External mode:  POST {webhook_url} → parse response → log interaction
@@ -69,10 +76,11 @@ Endpoints can have a `custom_domain` (e.g., `docs.acme.com`). Cloudflare for Saa
 
 ### Key Service Files
 
+- `services/query-handler.ts` — Shared `handleQuery()` used by public query route, authenticated query route, and custom domain query route. Contains all query logic (external webhook, RAG pipeline, interaction logging).
 - `services/azure-search.ts` — Azure AI Search client. `AzureSearchClient.indexName(accountId, slug)` generates index names. Supports `listDocuments(indexName, filename?)` with OData server-side filtering, `deleteDocuments(indexName, docIds)` for batch delete.
 - `services/azure-openai.ts` — Azure OpenAI client. `embedBatch()` for chunked docs (16 per batch). `chat()` accepts optional `modelOverride`.
 - `services/llm-chat.ts` — Routes `chatWithProvider()` to Azure (platform), OpenAI API (byok/openai), or Anthropic API (byok/anthropic). Decrypts BYOK keys at runtime.
-- `services/skill-gen.ts` — Generates per-endpoint SKILL.md + llms.txt. Uses `ENDPOINT_MODE` constants. Pass `mode` and `customDomain` when calling.
+- `services/skill-gen.ts` — Generates per-endpoint SKILL.md + llms.txt. Uses `ENDPOINT_MODE` constants. Pass `mode` and `customDomain` when calling. Generated SKILL.md points to public query URL (no auth required).
 - `services/custom-domains.ts` — Cloudflare for SaaS API client. Creates/deletes custom hostnames.
 
 ### Shared Utilities
@@ -101,8 +109,8 @@ D1 (SQLite via Drizzle ORM). Three tables: `accounts`, `endpoints`, `interaction
 - Apply `resolveEndpoint as any` per-route (not `app.use('*')`) — global apply breaks routes without `:slug` param
 - Interactions are logged via `c.executionCtx.waitUntil()` — fire and forget, don't block response
 - API keys are managed by Unkey — key creation in `routes/accounts.ts` via `@unkey/api`, verification in `middleware/auth.ts`
-- Per-key rate limiting is handled by Unkey (set on key creation: 60 req/min). Only `POST /v1/accounts` uses in-memory IP rate limiting.
-- Daily query quota (50/day free tier) uses Unkey credits with daily auto-refill. Query route uses `authWithCredits` middleware (direct @unkey/api with credit deduction), other routes use `authMiddleware` (no credit deduction, allows USAGE_EXCEEDED through).
+- Per-key rate limiting is handled by Unkey (set on key creation: 60 req/min). Only `POST /v1/accounts` uses in-memory IP rate limiting. Public query routes use Cloudflare Rate Limiting Rules (edge-level).
+- Daily query quota (50/day free tier) tracked per-endpoint via D1 counter (`query_count` + `query_count_reset_at` columns). Atomic reset+increment in `services/query-handler.ts` using raw SQL with RETURNING clause. Resets 24h after first query in window.
 - Endpoint limit (3 active per free account) enforced via D1 COUNT in `routes/endpoints.ts`.
 - Plan limits defined in `PLAN_LIMITS` constant in `types.ts`.
 - PDF uploads accepted via `pdf` field (base64-encoded), extracted in-worker using `unpdf`. Max 10MB base64.

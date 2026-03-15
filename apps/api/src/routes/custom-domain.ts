@@ -5,7 +5,7 @@
  * Simplified URL structure on custom domains:
  *   GET  /skill.md        → endpoint's SKILL.md
  *   GET  /llms.txt        → endpoint's llms.txt
- *   POST /query           → query the endpoint
+ *   POST /query           → query the endpoint (public, IP rate limited)
  *   GET  /docs            → list documents
  *   POST /docs            → upload document
  *   DELETE /docs/:filename → delete document
@@ -13,34 +13,24 @@
  */
 
 import { Hono } from 'hono'
-import { eq } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
 import { endpoints, interactions } from '../db/schema'
 import { generateId } from '../utils/id'
 import { chunkText } from '../utils/chunker'
 import { extractText } from 'unpdf'
 import { createSearchClient } from '../services/azure-search'
 import { createOpenAIClient } from '../services/azure-openai'
-import { chatWithProvider } from '../services/llm-chat'
+import { handleQuery } from '../services/query-handler'
 import { generateLlmsTxt } from '../services/skill-gen'
-import { authMiddleware, authWithCredits } from '../middleware/auth'
+import { authMiddleware } from '../middleware/auth'
 import { errorResponse, serviceError, ErrorCode } from '../utils/errors'
 import { parseBody, safeJsonParse, parseIntParam } from '../utils/validate'
-import { signPayload } from '../utils/hmac'
-import { decrypt } from '../utils/encrypt'
-import { UploadDocumentSchema, QueryEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE, PLAN_LIMITS } from '../types'
+import { UploadDocumentSchema, ENDPOINT_STATUS, ENDPOINT_MODE } from '../types'
 import type { Env, AppVariables } from '../types'
 import type { EndpointRow } from '../middleware/resolve-endpoint'
 
 const PLATFORM_HOSTNAME = 'agentbase.axite.ai'
 const EMBED_BATCH_SIZE = 16
-const WEBHOOK_TIMEOUT_MS = 30_000
-
-const SYSTEM_PROMPT = `Answer questions using ONLY the provided documents.
-Use short sentences. Include specific details: numbers, tool names, exact values.
-Do NOT use markdown formatting (bold, italics, headers).
-Do NOT cite source documents inline (sources are returned separately in the API response).
-Do NOT add disclaimers, caveats, or meta-commentary.
-If the answer is not in the documents, respond with exactly: "Not in knowledge base."`
 
 const app = new Hono<{ Bindings: Env; Variables: AppVariables & { customEndpoint: EndpointRow } }>()
 
@@ -97,155 +87,15 @@ app.get('/llms.txt', resolveByHostname, async (c) => {
   return c.text(llmsTxt)
 })
 
-// --- Authenticated routes ---
-
-app.post('/query', resolveByHostname, authWithCredits, async (c) => {
+// Public: Query via custom domain (no auth, daily quota via D1, IP rate limited via CF)
+app.post('/query', resolveByHostname, async (c) => {
   const ep = c.get('endpoint')
   if (!ep) return
 
-  if (ep.status !== ENDPOINT_STATUS.ACTIVE) {
-    return errorResponse(c, 422, ErrorCode.ENDPOINT_PAUSED, 'This endpoint is paused')
-  }
-
-  const data = await parseBody(c, QueryEndpointSchema)
-  if (data instanceof Response) return data
-
-  const startTime = Date.now()
-
-  try {
-    let answer: string
-    let sources: Array<{ document: string; content: string; relevance: number }> = []
-    let promptTokens = 0
-    let completionTokens = 0
-
-    if (ep.mode === ENDPOINT_MODE.EXTERNAL) {
-      // ---- EXTERNAL MODE: OpenAI-compatible chat completions ----
-      if (!ep.webhookUrl) {
-        return errorResponse(c, 422, ErrorCode.QUERY_ERROR, 'External endpoint has no webhook URL configured')
-      }
-
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS)
-
-      const systemPrompt = ep.systemPrompt || SYSTEM_PROMPT
-      const userContent = data.context ? `${data.context}\n\n${data.query}` : data.query
-      const webhookBody = JSON.stringify({
-        model: ep.externalModel || 'default',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userContent },
-        ],
-      })
-
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (ep.externalApiKey) {
-        const apiKey = await decrypt(ep.externalApiKey, c.env.ENCRYPTION_SECRET)
-        headers['Authorization'] = `Bearer ${apiKey}`
-      }
-      if (ep.webhookSecret) {
-        const timestamp = Math.floor(Date.now() / 1000).toString()
-        const signature = await signPayload(`${timestamp}.${webhookBody}`, ep.webhookSecret)
-        headers['X-AgentPort-Signature'] = signature
-        headers['X-AgentPort-Timestamp'] = timestamp
-      }
-
-      try {
-        const res = await fetch(ep.webhookUrl, {
-          method: 'POST', headers, body: webhookBody, signal: controller.signal,
-        })
-        clearTimeout(timeout)
-
-        if (!res.ok) {
-          const body = await res.text()
-          throw new Error(`Webhook returned ${res.status}: ${body}`)
-        }
-
-        const webhookData = await res.json() as {
-          choices?: Array<{ message: { content: string } }>
-          usage?: { prompt_tokens?: number; completion_tokens?: number }
-        }
-
-        answer = webhookData.choices?.[0]?.message?.content || ''
-        promptTokens = webhookData.usage?.prompt_tokens || 0
-        completionTokens = webhookData.usage?.completion_tokens || 0
-      } catch (err) {
-        clearTimeout(timeout)
-        if (err instanceof Error && err.name === 'AbortError') {
-          throw new Error('Webhook timed out after 30 seconds')
-        }
-        throw err
-      }
-    } else {
-      if (!ep.azureIndexName) {
-        return errorResponse(c, 422, ErrorCode.QUERY_ERROR, 'Endpoint has no search index')
-      }
-
-      const openai = createOpenAIClient(c.env)
-      const search = createSearchClient(c.env)
-      const queryVector = await openai.embed(data.query)
-      const searchResults = await search.search(ep.azureIndexName, data.query, queryVector, data.max_sources)
-
-      if (searchResults.length === 0) {
-        return c.json({
-          answer: 'No relevant documents found. Please upload documents to this endpoint first.',
-          sources: [], usage: { input_tokens: 0, output_tokens: 0 },
-          interaction_id: generateId(),
-        })
-      }
-
-      const context = searchResults
-        .map((r, i) => `[Source ${i + 1}: ${r.filename}]\n${r.content}`)
-        .join('\n\n---\n\n')
-
-      const systemPrompt = ep.systemPrompt || SYSTEM_PROMPT
-      const queryText = data.context
-        ? `Additional context: ${data.context}\n\nQuestion: ${data.query}`
-        : data.query
-
-      const llmResult = await chatWithProvider(ep, c.env, systemPrompt, context, queryText)
-
-      answer = llmResult.answer
-      sources = searchResults.map(r => ({
-        document: r.filename,
-        content: r.content.slice(0, 200) + (r.content.length > 200 ? '...' : ''),
-        relevance: r.score,
-      }))
-      promptTokens = llmResult.promptTokens
-      completionTokens = llmResult.completionTokens
-    }
-
-    const latencyMs = Date.now() - startTime
-    const interactionId = generateId()
-    const db = c.get('db')
-
-    c.executionCtx.waitUntil(
-      db.insert(interactions).values({
-        id: interactionId, endpointId: ep.id,
-        query: data.query, response: answer,
-        sources: JSON.stringify(sources),
-        tokensInput: promptTokens, tokensOutput: completionTokens,
-        latencyMs,
-      })
-    )
-
-    const remaining = c.get('remainingCredits')
-    if (remaining !== undefined) {
-      const tomorrow = new Date()
-      tomorrow.setUTCHours(24, 0, 0, 0)
-      c.header('X-RateLimit-Limit', String(PLAN_LIMITS.free.queriesPerDay))
-      c.header('X-RateLimit-Remaining', String(remaining))
-      c.header('X-RateLimit-Reset', tomorrow.toISOString())
-    }
-
-    return c.json({
-      answer, sources,
-      usage: { input_tokens: promptTokens, output_tokens: completionTokens },
-      interaction_id: interactionId,
-    })
-  } catch (err) {
-    return serviceError(c, ErrorCode.QUERY_ERROR, 'Failed to process query. Please try again.', err)
-  }
+  return handleQuery(c, ep)
 })
+
+// --- Authenticated routes ---
 
 app.get('/docs', resolveByHostname, authMiddleware, async (c) => {
   const ep = c.get('endpoint')
@@ -366,7 +216,6 @@ app.get('/interactions', resolveByHostname, authMiddleware, async (c) => {
   const limit = parseIntParam(c.req.query('limit'), 50, 1, 100)
   const offset = parseIntParam(c.req.query('offset'), 0, 0)
 
-  const { desc } = await import('drizzle-orm')
   const results = await db
     .select({
       id: interactions.id, query: interactions.query, response: interactions.response,

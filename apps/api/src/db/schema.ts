@@ -29,6 +29,8 @@ export const endpoints = sqliteTable('endpoints', {
   externalModel: text('external_model'),     // external mode: model name for OpenAI-compatible endpoint
   externalApiKey: text('external_api_key'),   // external mode: encrypted Bearer token
   customDomain: text('custom_domain'),   // e.g., "docs.acme.com"
+  queryCount: integer('query_count').notNull().default(0),
+  queryCountResetAt: integer('query_count_reset_at').notNull().default(0),
   status: text('status').notNull().default('active'),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 }, (table) => [

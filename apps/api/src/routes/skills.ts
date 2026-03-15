@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { eq } from 'drizzle-orm'
 import { endpoints } from '../db/schema'
 import { generateSkillMd, generateLlmsTxt } from '../services/skill-gen'
+import { handleQuery } from '../services/query-handler'
 import { authMiddleware } from '../middleware/auth'
 import { resolveEndpoint } from '../middleware/resolve-endpoint'
 import { errorResponse, ErrorCode } from '../utils/errors'
@@ -11,7 +12,25 @@ import type { Env, AppVariables } from '../types'
 
 const app = new Hono<{ Bindings: Env; Variables: AppVariables }>()
 
-// Public: Get endpoint's SKILL.md by globally unique endpoint ID (no auth)
+// --- Helper: load full endpoint row by ID ---
+
+async function loadEndpointById(c: any, endpointId: string) {
+  const db = c.get('db')
+  const [ep] = await db
+    .select()
+    .from(endpoints)
+    .where(eq(endpoints.id, endpointId))
+    .limit(1)
+
+  if (!ep || ep.status === ENDPOINT_STATUS.ARCHIVED) {
+    return null
+  }
+  return ep
+}
+
+// --- Public routes (no auth, IP rate limited via CF Rate Limiting Rules) ---
+
+// Public: Get endpoint's SKILL.md by globally unique endpoint ID
 app.get('/v1/e/:endpointId/skill.md', async (c) => {
   const endpointId = c.req.param('endpointId')
   if (!endpointId) return errorResponse(c, 400, ErrorCode.VALIDATION_ERROR, 'Endpoint ID is required')
@@ -37,7 +56,7 @@ app.get('/v1/e/:endpointId/skill.md', async (c) => {
   return c.text(endpoint.skillMd)
 })
 
-// Public: Get endpoint's llms.txt by endpoint ID (no auth)
+// Public: Get endpoint's llms.txt by endpoint ID
 app.get('/v1/e/:endpointId/llms.txt', async (c) => {
   const endpointId = c.req.param('endpointId')
   if (!endpointId) return errorResponse(c, 400, ErrorCode.VALIDATION_ERROR, 'Endpoint ID is required')
@@ -68,6 +87,21 @@ app.get('/v1/e/:endpointId/llms.txt', async (c) => {
   c.header('Cache-Control', 'public, max-age=300')
   return c.text(llmsTxt)
 })
+
+// Public: Query endpoint by ID (no auth, daily quota via D1, IP rate limited via CF)
+app.post('/v1/e/:endpointId/query', async (c) => {
+  const endpointId = c.req.param('endpointId')
+  if (!endpointId) return errorResponse(c, 400, ErrorCode.VALIDATION_ERROR, 'Endpoint ID is required')
+
+  const ep = await loadEndpointById(c, endpointId)
+  if (!ep) {
+    return errorResponse(c, 404, ErrorCode.NOT_FOUND, 'Endpoint not found')
+  }
+
+  return handleQuery(c, ep)
+})
+
+// --- Authenticated routes ---
 
 // Authenticated: Get endpoint SKILL.md by slug (scoped to account)
 app.get('/v1/endpoints/:slug/skill.md', authMiddleware, resolveEndpoint as any, async (c) => {

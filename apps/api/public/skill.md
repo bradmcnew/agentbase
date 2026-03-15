@@ -156,11 +156,10 @@ AgentBase automatically chunks your document, generates embeddings, and indexes 
 
 ### 4. Query your endpoint
 
-Now ask it a question.
+Now ask it a question. The public query endpoint needs no API key -- any agent can use it:
 
 ```bash
-curl -X POST https://agentbase.axite.ai/v1/endpoints/api-docs/query \
-  -H "Authorization: Bearer $AGENTBASE_API_KEY" \
+curl -X POST https://agentbase.axite.ai/v1/e/def456/query \
   -H "Content-Type: application/json" \
   -d '{"query": "How do I authenticate?"}'
 ```
@@ -312,7 +311,7 @@ All requests use JSON. All write endpoints require `Authorization: Bearer {api_k
 
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/v1/endpoints/{slug}/query` | Bearer | Query endpoint. Body: `{"query", "context?", "max_sources?"}`. Returns answer + sources. |
+| POST | `/v1/e/{endpoint_id}/query` | None | **Public query endpoint.** No API key needed. Daily quota per endpoint (50/day free). Body: `{"query", "context?", "max_sources?"}`. |
 | GET | `/v1/endpoints/{slug}/interactions` | Bearer | List past queries. Params: `?limit=50&offset=0` |
 
 ### SKILL.md & Discovery
@@ -366,9 +365,10 @@ See [external-mode.md](https://agentbase.axite.ai/external-mode.md) for the full
 | Resource | Limit |
 |----------|-------|
 | Account creation | 5 per hour per IP |
-| API requests | 60 per minute per API key |
+| Public queries (`/v1/e/{id}/query`) | 2 per 10 seconds per IP |
+| API requests (authenticated) | 60 per minute per API key |
 | Endpoints (free plan) | 3 active |
-| Queries per day (free plan) | 50, resets at midnight UTC |
+| Queries per endpoint (free plan) | 50 per day, resets 24h after first query |
 | Max document size | 10 MB |
 | Max query length | 5,000 characters |
 | Supported formats | Markdown, plain text, PDF |

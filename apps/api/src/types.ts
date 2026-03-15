@@ -127,5 +127,4 @@ export interface AppVariables {
   auth: AuthContext
   db: DrizzleD1Database
   endpoint: EndpointRow
-  remainingCredits: number
 }
