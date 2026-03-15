@@ -15,7 +15,7 @@ import { chatWithProvider } from './llm-chat'
 import { errorResponse, serviceError, ErrorCode } from '../utils/errors'
 import { parseBody } from '../utils/validate'
 import { signPayload } from '../utils/hmac'
-import { decrypt, encrypt } from '../utils/encrypt'
+import { decrypt } from '../utils/encrypt'
 import { QueryEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE, PLAN_LIMITS } from '../types'
 import type { Env } from '../types'
 import type { EndpointRow } from '../middleware/resolve-endpoint'
@@ -113,22 +113,7 @@ export async function handleQuery(c: Context, ep: EndpointRow): Promise<Response
         headers['Authorization'] = `Bearer ${apiKey}`
       }
       if (ep.webhookSecret) {
-        let secret: string
-        try {
-          secret = await decrypt(ep.webhookSecret, env.ENCRYPTION_SECRET)
-        } catch {
-          // Legacy plaintext secret — use raw and migrate in background
-          secret = ep.webhookSecret
-          const db = c.get('db')
-          c.executionCtx.waitUntil(
-            (async () => {
-              const { eq } = await import('drizzle-orm')
-              const { endpoints } = await import('../db/schema')
-              const encrypted = await encrypt(secret, env.ENCRYPTION_SECRET)
-              await db.update(endpoints).set({ webhookSecret: encrypted }).where(eq(endpoints.id, ep.id))
-            })()
-          )
-        }
+        const secret = await decrypt(ep.webhookSecret, env.ENCRYPTION_SECRET)
         const timestamp = Math.floor(Date.now() / 1000).toString()
         const signature = await signPayload(`${timestamp}.${webhookBody}`, secret)
         headers['X-AgentPort-Signature'] = signature

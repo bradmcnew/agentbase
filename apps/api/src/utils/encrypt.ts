@@ -7,8 +7,13 @@
 const ALGO = 'AES-GCM'
 const IV_LENGTH = 12  // 96-bit IV for GCM
 
-/** Derive a 256-bit key from a string secret */
+/** Cached derived key — same secret + static salt = same key per isolate */
+let cachedKey: CryptoKey | null = null
+let cachedSecret: string | null = null
+
+/** Derive a 256-bit key from a string secret (cached per isolate) */
 async function deriveKey(secret: string): Promise<CryptoKey> {
+  if (cachedKey && cachedSecret === secret) return cachedKey
   const keyMaterial = await crypto.subtle.importKey(
     'raw',
     new TextEncoder().encode(secret),
@@ -16,13 +21,15 @@ async function deriveKey(secret: string): Promise<CryptoKey> {
     false,
     ['deriveKey']
   )
-  return crypto.subtle.deriveKey(
+  cachedKey = await crypto.subtle.deriveKey(
     { name: 'PBKDF2', salt: new TextEncoder().encode('agentport-v1'), iterations: 100000, hash: 'SHA-256' },
     keyMaterial,
     { name: ALGO, length: 256 },
     false,
     ['encrypt', 'decrypt']
   )
+  cachedSecret = secret
+  return cachedKey
 }
 
 /** Encrypt a plaintext string. Returns a base64-encoded string. */

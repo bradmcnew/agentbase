@@ -31,6 +31,7 @@ export type EndpointMode = typeof ENDPOINT_MODE[keyof typeof ENDPOINT_MODE]
 // --- Domain blocklist ---
 
 const BLOCKED_DOMAIN_SUFFIXES = ['.axite.ai', '.workers.dev', '.cloudflare.com', '.cloudflaressl.com', '.pages.dev', '.r2.dev']
+// Blocks both exact matches (e.g., "axite.ai") and subdomains (e.g., "foo.axite.ai")
 const isBlockedDomain = (d: string) => BLOCKED_DOMAIN_SUFFIXES.some(s => d === s.slice(1) || d.endsWith(s))
 
 const customDomainBase = z.string().max(253).regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)*$/, 'Must be a valid hostname')
