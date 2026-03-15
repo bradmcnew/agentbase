@@ -66,9 +66,9 @@ Platform/BYOK:  embed(query) → search(index, query, vector) → chatWithProvid
 
 ### Three Endpoint Modes
 
-- **platform**: Our Azure handles everything. Customer picks model (`gpt-5-mini` default, `gpt-5-nano` lightweight). Creates Azure Search index on endpoint creation.
-- **byok**: Customer provides OpenAI/Anthropic key for LLM chat. We still handle embedding + search. Creates Azure Search index. Customer keys encrypted at rest via AES-256-GCM.
-- **external**: Customer provides webhook URL. No Azure Search index. No doc uploads. We forward `{query, context}`, expect `{answer}` back (30s timeout). Webhook requests signed with HMAC-SHA256.
+- **platform**: Our Azure handles everything. Customer picks model (`gpt-5-mini` default, `gpt-5-nano` lightweight). Model validated against `PLATFORM_MODELS` constant at runtime — invalid models silently fall back to default. Creates Azure Search index on endpoint creation.
+- **byok**: Customer provides OpenAI/Anthropic/Gemini key for LLM chat. We still handle embedding + search. Creates Azure Search index. Customer keys encrypted at rest via AES-256-GCM.
+- **external**: Customer provides webhook URL. No Azure Search index. No doc uploads. We forward query as OpenAI chat completions format (30s timeout). Webhook requests signed with HMAC-SHA256 (`whsec_` prefixed secret, encrypted at rest). Customer verifies via `X-AgentPort-Signature` + `X-AgentPort-Timestamp` headers.
 
 ### Custom Domains
 
@@ -112,7 +112,8 @@ D1 (SQLite via Drizzle ORM). Three tables: `accounts`, `endpoints`, `interaction
 - Per-key rate limiting is handled by Unkey (set on key creation: 60 req/min). Only `POST /v1/accounts` uses in-memory IP rate limiting. Public query routes use Cloudflare Rate Limiting Rules (edge-level).
 - Daily query quota (50/day free tier) tracked per-endpoint via D1 counter (`query_count` + `query_count_reset_at` columns). Atomic reset+increment in `services/query-handler.ts` using raw SQL with RETURNING clause. Resets 24h after first query in window.
 - Endpoint limit (3 active per free account) enforced via D1 COUNT in `routes/endpoints.ts`.
-- Plan limits defined in `PLAN_LIMITS` constant in `types.ts`.
+- Plan limits defined in `PLAN_LIMITS` constant in `types.ts`. Platform models defined in `PLATFORM_MODELS` constant — enforced at runtime in `llm-chat.ts`.
+- SKILL.md is auto-generated on endpoint creation and auto-regenerated on PATCH when `name`, `description`, `capabilities`, or `custom_domain` change. Manual regeneration via `POST /v1/endpoints/{slug}/skill`.
 - PDF uploads accepted via `pdf` field (base64-encoded), extracted in-worker using `unpdf`. Max 10MB base64.
 - Document deletion by filename via `DELETE /v1/endpoints/{slug}/docs/{filename}` — uses Azure Search OData `$filter` for server-side filtering.
 - Azure error messages are never exposed to users — use `serviceError()` which logs internally and returns generic message
