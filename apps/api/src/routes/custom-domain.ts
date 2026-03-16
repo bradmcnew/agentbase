@@ -29,7 +29,7 @@ import { UploadDocumentSchema, ENDPOINT_STATUS, ENDPOINT_MODE } from '../types'
 import type { Env, AppVariables } from '../types'
 import type { EndpointRow } from '../middleware/resolve-endpoint'
 
-const PLATFORM_HOSTNAME = 'agentbase.axite.ai'
+const PLATFORM_HOSTNAME = 'agentbase.to'
 const EMBED_BATCH_SIZE = 16
 
 const app = new Hono<{ Bindings: Env; Variables: AppVariables & { customEndpoint: EndpointRow } }>()
@@ -45,11 +45,7 @@ async function resolveByHostname(c: any, next: any) {
   }
 
   const db = c.get('db')
-  const [ep] = await db
-    .select()
-    .from(endpoints)
-    .where(eq(endpoints.customDomain, hostname))
-    .limit(1)
+  const [ep] = await db.select().from(endpoints).where(eq(endpoints.customDomain, hostname)).limit(1)
 
   if (!ep || ep.status === ENDPOINT_STATUS.ARCHIVED) {
     return errorResponse(c, 404, ErrorCode.NOT_FOUND, 'No endpoint configured for this domain')
@@ -75,7 +71,8 @@ app.get('/llms.txt', resolveByHostname, async (c) => {
   const ep = c.get('endpoint')
   if (!ep) return
 
-  const baseUrl = `https://${ep.customDomain}`
+  const hostname = new URL(c.req.url).hostname
+  const baseUrl = `https://${hostname}`
   const llmsTxt = generateLlmsTxt({
     slug: ep.slug, name: ep.name, description: ep.description,
     capabilities: safeJsonParse(ep.capabilities, []),

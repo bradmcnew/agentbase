@@ -1,6 +1,6 @@
 # AgentBase Custom Domains
 
-Make your endpoint look like your own product. Instead of `agentbase.axite.ai/v1/e/{id}/skill.md`, agents see `docs.acme.com/skill.md`.
+Make your endpoint look like your own product. Instead of `agentbase.to/a/{slug}/skill.md`, agents see `docs.acme.com/skill.md`.
 
 ---
 
@@ -9,7 +9,7 @@ Make your endpoint look like your own product. Instead of `agentbase.axite.ai/v1
 ### Step 1: Create your endpoint with a custom domain
 
 ```bash
-curl -X POST https://agentbase.axite.ai/v1/endpoints \
+curl -X POST https://agentbase.to/v1/endpoints \
   -H "Authorization: Bearer $AGENTBASE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"slug": "api-docs", "name": "Acme Docs", "custom_domain": "docs.acme.com"}'
@@ -18,7 +18,7 @@ curl -X POST https://agentbase.axite.ai/v1/endpoints \
 Or add a custom domain to an existing endpoint:
 
 ```bash
-curl -X PATCH https://agentbase.axite.ai/v1/endpoints/api-docs \
+curl -X PATCH https://agentbase.to/v1/endpoints/api-docs \
   -H "Authorization: Bearer $AGENTBASE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"custom_domain": "docs.acme.com"}'
@@ -29,9 +29,9 @@ curl -X PATCH https://agentbase.axite.ai/v1/endpoints/api-docs \
 ```json
 {
   "custom_domain": "docs.acme.com",
-  "cname_target": "cdn.agentbase.axite.ai",
+  "cname_target": "cdn.agentbase.to",
   "dns_status": "pending",
-  "dns_instructions": "Add a CNAME record: docs.acme.com -> cdn.agentbase.axite.ai"
+  "dns_instructions": "Add a CNAME record: docs.acme.com -> cdn.agentbase.to"
 }
 ```
 
@@ -47,7 +47,7 @@ To activate it, add this DNS record:
 
   Type: CNAME
   Name: docs (or whatever subdomain)
-  Target: cdn.agentbase.axite.ai
+  Target: cdn.agentbase.to
 
 This can be done in your DNS provider's dashboard.
 SSL is provisioned automatically after the record is added (usually < 5 minutes).
@@ -80,7 +80,7 @@ Auth (Bearer token) is still required for all write operations. The original Age
 ## Remove a Custom Domain
 
 ```bash
-curl -X PATCH https://agentbase.axite.ai/v1/endpoints/api-docs \
+curl -X PATCH https://agentbase.to/v1/endpoints/api-docs \
   -H "Authorization: Bearer $AGENTBASE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{"custom_domain": null}'

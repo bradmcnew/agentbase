@@ -2,6 +2,8 @@
  * Azure OpenAI client for embeddings and chat completion.
  */
 
+import { MAX_COMPLETION_TOKENS } from '../types'
+
 interface AzureOpenAIConfig {
   endpoint: string
   apiKey: string
@@ -61,7 +63,7 @@ export class AzureOpenAIClient {
           { role: 'system', content: systemPrompt },
           { role: 'user', content: `${context}\n\n---\n\nQuestion: ${query}` },
         ],
-        max_completion_tokens: 1024,
+        max_completion_tokens: MAX_COMPLETION_TOKENS,
       }),
     })
 

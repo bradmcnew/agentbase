@@ -5,7 +5,7 @@
  */
 
 const CF_API = 'https://api.cloudflare.com/client/v4'
-const CNAME_TARGET = 'cdn.agentbase.axite.ai'
+const CNAME_TARGET = 'cdn.agentbase.to'
 
 interface CustomHostnameResult {
   id: string

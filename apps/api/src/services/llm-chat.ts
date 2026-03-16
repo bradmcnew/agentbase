@@ -8,7 +8,7 @@
 
 import { createOpenAIClient } from './azure-openai'
 import type { EndpointRow } from '../middleware/resolve-endpoint'
-import { ENDPOINT_MODE, PLATFORM_MODELS } from '../types'
+import { ENDPOINT_MODE, PLATFORM_MODELS, MAX_COMPLETION_TOKENS } from '../types'
 import { decrypt } from '../utils/encrypt'
 import type { Env } from '../types'
 
@@ -57,7 +57,7 @@ async function openaiCompatibleChat(apiKey: string, baseUrl: string, model: stri
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `${context}\n\n---\n\nQuestion: ${query}` },
       ],
-      max_completion_tokens: 1024,
+      max_completion_tokens: MAX_COMPLETION_TOKENS,
     }),
   })
 
@@ -89,7 +89,7 @@ async function anthropicChat(apiKey: string, model: string, systemPrompt: string
     },
     body: JSON.stringify({
       model,
-      max_tokens: 1024,
+      max_tokens: MAX_COMPLETION_TOKENS,
       system: systemPrompt,
       messages: [
         { role: 'user', content: `${context}\n\n---\n\nQuestion: ${query}` },

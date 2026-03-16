@@ -18,10 +18,12 @@ export const ENDPOINT_MODE = {
 
 export const PLATFORM_MODELS = ['gpt-5-mini', 'gpt-5-nano'] as const
 
+export const MAX_COMPLETION_TOKENS = 4096
+
 // --- Plan limits ---
 
 export const PLAN_LIMITS = {
-  free: { queriesPerDay: 50, maxEndpoints: 3 },
+  free: { queriesPerDay: 50, maxEndpoints: 1 },
   pro: { queriesPerDay: 10_000, maxEndpoints: 50 },
 } as const
 

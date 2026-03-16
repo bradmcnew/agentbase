@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What This Is
 
-AgentBase — "Chatbase for agents." A platform where companies upload docs and get hosted knowledge endpoints that AI agents can query. The platform itself is agent-accessible via SKILL.md. Three endpoint modes: platform (we handle RAG + LLM), BYOK (customer's LLM key, our RAG), external (customer's webhook agent).
+AgentBase — "Chatbase for agents." Give your product a representative in the agent economy -- an AI agent other agents can talk to. The platform itself is agent-accessible via SKILL.md. Three endpoint modes: platform (hosted agent powered by our RAG + LLM), BYOK (customer's LLM key, our RAG), external (customer's own agent, our discovery layer).
 
 ## Commands
 
@@ -23,8 +23,8 @@ cd apps/api && pnpm db:migrate:remote  # Apply to production D1
 cd apps/api && CLOUDFLARE_API_TOKEN=... npx wrangler deploy
 
 # Test endpoints
-curl https://agentbase.axite.ai/health
-curl https://agentbase.axite.ai/skill.md
+curl https://agentbase.to/health
+curl https://agentbase.to/skill.md
 ```
 
 ## Architecture
@@ -46,7 +46,7 @@ Request → CORS → Logger → dbMiddleware → [authMiddleware] → [resolveEn
 ### Query Routes (Public)
 
 All queries go through public endpoints — no API key needed:
-- `POST /v1/e/{id}/query` — by endpoint ID (standard path)
+- `POST /a/{slug}/query` — by endpoint slug (standard path)
 - `POST /query` — on custom domains
 
 Both call `handleQuery()` in `services/query-handler.ts`. Daily quota (50/day free) tracked via D1 counter on `endpoints` table (atomic reset+increment). IP rate limiting via Cloudflare Rate Limiting Rules (edge-level, not in-memory).
@@ -72,7 +72,7 @@ Platform/BYOK:  embed(query) → search(index, query, vector) → chatWithProvid
 
 ### Custom Domains
 
-Endpoints can have a `custom_domain` (e.g., `docs.acme.com`). Cloudflare for SaaS handles SSL provisioning. Customer adds a CNAME to `cdn.agentbase.axite.ai`. Hostname-based routing in `routes/custom-domain.ts` resolves endpoint by `custom_domain` column. Simplified URL structure on custom domains (`/skill.md`, `/query`, `/docs` instead of `/v1/endpoints/{slug}/...`).
+Endpoints can have a `custom_domain` (e.g., `docs.acme.com`). Cloudflare for SaaS handles SSL provisioning. Customer adds a CNAME to `cdn.agentbase.to`. Hostname-based routing in `routes/custom-domain.ts` resolves endpoint by `custom_domain` column. Simplified URL structure on custom domains (`/skill.md`, `/query`, `/docs` instead of `/v1/endpoints/{slug}/...`).
 
 ### Key Service Files
 
@@ -92,9 +92,19 @@ Endpoints can have a `custom_domain` (e.g., `docs.acme.com`). Cloudflare for Saa
 - `utils/encrypt.ts` — AES-256-GCM encryption/decryption for BYOK API keys at rest
 - `utils/hmac.ts` — HMAC-SHA256 signing for external mode webhook requests
 
-### Static Assets
+### Static Assets & Landing Page
 
-Platform SKILL.md, HEARTBEAT.md, and llms.txt are static files in `apps/api/public/` and `apps/api/public/.well-known/`. Served by Cloudflare Workers Static Assets (configured in wrangler.toml `[assets]`). No route handler needed — Cloudflare serves them at the edge.
+Static files in `apps/api/public/` served by Cloudflare Workers Static Assets (configured in wrangler.toml `[assets]`). No route handler needed — Cloudflare serves them at the edge.
+
+- `index.html` — Landing page at `https://agentbase.to/`. Single-file static HTML with inline CSS (Tailwind-free). Uses JetBrains Mono + Inter from Google Fonts. Dark terminal aesthetic inspired by AgentMail. Design tokens in CSS `:root` variables. No build step — edit and deploy.
+- `skill.md`, `heartbeat.md`, `custom-domains.md`, `external-mode.md` — Platform documentation (agent-readable)
+- `.well-known/llms.txt`, `.well-known/skill.md` — Standard discovery files
+
+**Landing page conventions:**
+- Colors: `--bg: #09090b`, `--fg: #fafafa`, `--fg-muted: #9f9fa9`, `--green: #9ece6a`, `--border: #1e1e23`, `--surface: #060608` (darker than bg)
+- Sharp corners on all containers (no border-radius) — matches AgentMail's style
+- Copy box uses card pattern: header with label, body with URL + copy icon
+- Fonts: JetBrains Mono for headings/code/UI, Inter for body text
 
 ### Database
 
@@ -134,7 +144,7 @@ CF_ZONE_ID (Cloudflare zone ID for axite.ai)
 CF_API_TOKEN (Cloudflare API token with DNS + Custom Hostname permissions)
 ```
 
-Production URL: `https://agentbase.axite.ai`
-Custom domains: customers can set `custom_domain` on endpoints (CF for SaaS auto-provisions SSL). Default URL is path-based: `/v1/e/{id}/skill.md`.
+Production URL: `https://agentbase.to`
+Custom domains: customers can set `custom_domain` on endpoints (CF for SaaS auto-provisions SSL). Default URL is path-based: `/a/{slug}/skill.md`.
 D1 database ID: `7e9dea6e-9a9f-4667-bb64-ab3ee46ef7f7`
 Cloudflare API token needed for deploys (set as `CLOUDFLARE_API_TOKEN` env var).

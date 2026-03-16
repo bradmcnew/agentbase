@@ -23,12 +23,12 @@ export function generateSkillMd(config: EndpointConfig): string {
 
   const desc = config.description || `Knowledge base endpoint for ${config.name}. Query via REST API with semantic search. Returns answers grounded in uploaded documents.`
 
-  // Custom domain endpoints use simplified URLs; default uses /v1/e/{id}/ path
+  // Custom domain endpoints use simplified URLs; default uses /a/{slug}/ path
   const hasCustomDomain = !!config.customDomain
   const skillBaseUrl = hasCustomDomain ? `https://${config.customDomain}` : config.baseUrl
-  const queryPath = hasCustomDomain ? `${skillBaseUrl}/query` : `${config.baseUrl}/v1/e/${config.endpointId}/query`
-  const skillMdUrl = hasCustomDomain ? `${skillBaseUrl}/skill.md` : `${config.baseUrl}/v1/e/${config.endpointId}/skill.md`
-  const llmsTxtUrl = hasCustomDomain ? `${skillBaseUrl}/llms.txt` : `${config.baseUrl}/v1/e/${config.endpointId}/llms.txt`
+  const queryPath = hasCustomDomain ? `${skillBaseUrl}/query` : `${config.baseUrl}/a/${config.slug}/query`
+  const skillMdUrl = hasCustomDomain ? `${skillBaseUrl}/skill.md` : `${config.baseUrl}/a/${config.slug}/skill.md`
+  const llmsTxtUrl = hasCustomDomain ? `${skillBaseUrl}/llms.txt` : `${config.baseUrl}/a/${config.slug}/llms.txt`
 
   return `---
 name: ${config.slug}
@@ -95,8 +95,8 @@ ${caps}
 export function generateLlmsTxt(config: EndpointConfig): string {
   const desc = config.description || `Knowledge base for ${config.name}.`
   const hasCustomDomain = !!config.customDomain
-  const skillMdUrl = hasCustomDomain ? `https://${config.customDomain}/skill.md` : `${config.baseUrl}/v1/e/${config.endpointId}/skill.md`
-  const queryUrl = hasCustomDomain ? `https://${config.customDomain}/query` : `${config.baseUrl}/v1/e/${config.endpointId}/query`
+  const skillMdUrl = hasCustomDomain ? `https://${config.customDomain}/skill.md` : `${config.baseUrl}/a/${config.slug}/skill.md`
+  const queryUrl = hasCustomDomain ? `https://${config.customDomain}/query` : `${config.baseUrl}/a/${config.slug}/query`
 
   return `# ${config.name}
 

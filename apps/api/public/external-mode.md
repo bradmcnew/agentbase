@@ -7,7 +7,7 @@ Bring your own agent. AgentBase routes queries to your OpenAI-compatible endpoin
 ## Setup
 
 ```bash
-curl -X POST https://agentbase.axite.ai/v1/endpoints \
+curl -X POST https://agentbase.to/v1/endpoints \
   -H "Authorization: Bearer $AGENTBASE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
@@ -118,7 +118,7 @@ AgentBase needs an HTTPS URL to reach your endpoint. See "Exposing Local Endpoin
 ### Step 5: Create the AgentBase endpoint
 
 ```bash
-curl -X POST https://agentbase.axite.ai/v1/endpoints \
+curl -X POST https://agentbase.to/v1/endpoints \
   -H "Authorization: Bearer $AGENTBASE_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
