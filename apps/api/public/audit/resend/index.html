@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Agent Audit: resend.com</title>
+  <meta name="description" content="Agents are getting 3 things wrong about Resend. SMTP ports, email scheduling, and DMARC support.">
+  <meta property="og:title" content="Agent Audit: resend.com">
+  <meta property="og:description" content="Agents are getting 3 things wrong about Resend">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://agentbase.to/audit/resend">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Agent Audit: resend.com">
+  <meta name="twitter:description" content="Agents are getting 3 things wrong about Resend">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#09090b; --fg:#fafafa; --border:#1e1e23; --surface:#060608; --surface-alt:#0d0d12; --muted:#9f9fa9; --fg-dim:#ccc; --green:#9ece6a; --red:#f7768e; --yellow:#e0af68; --purple:#bb9af7 }
+    * { margin:0; padding:0; box-sizing:border-box }
+    body { background:var(--bg); color:var(--fg); font-family:Inter,system-ui,sans-serif; line-height:1.6; padding:1.5rem; max-width:900px; margin:0 auto }
+    h1 { font-family:'JetBrains Mono',monospace; font-size:1.5rem; word-break:break-word }
+    a { color:var(--green); text-decoration:none }
+    .header { margin-bottom:2rem }
+    .scores { display:flex; gap:1.5rem; margin:1rem 0; font-family:'JetBrains Mono',monospace; flex-wrap:wrap }
+    .scores .passed { color:var(--green); font-size:1.5rem; font-weight:700 }
+    .scores .failed { font-size:1.5rem; font-weight:700 }
+    .meta { color:var(--muted); font-size:0.8em; line-height:1.8 }
+    .pass-row { margin:0.5rem 0; padding:0.75rem 1rem; border:1px solid var(--border); display:flex; align-items:baseline; gap:0.75rem }
+    .pass-row .label { color:var(--green); font-weight:600; font-size:0.85em; flex-shrink:0 }
+    .pass-row .question { font-family:'JetBrains Mono',monospace; font-size:0.9rem; word-break:break-word }
+    .fail-card { margin:1rem 0; padding:1.25rem; border:1px solid var(--border); background:var(--surface) }
+    .fail-header { margin-bottom:1rem; word-break:break-word; display:flex; align-items:baseline; gap:0.75rem }
+    .fail-header .label { color:var(--red); font-weight:600; flex-shrink:0 }
+    .fail-header .question { font-family:'JetBrains Mono',monospace; font-size:0.95rem }
+    .answers { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem; font-size:0.8em }
+    .answer-box { padding:0.75rem; border:1px solid var(--border); min-width:0 }
+    .answer-box .source { font-weight:600; font-size:0.8em; margin-bottom:0.25rem }
+    .answer-box.truth .source { color:var(--green) }
+    .answer-box.agent .source { color:var(--yellow) }
+    .answer-box .text { color:var(--fg-dim); word-break:break-word }
+    .finding { margin-bottom:0.75rem; padding:1rem; background:var(--surface-alt) }
+    .finding:last-child { margin-bottom:0 }
+    .finding .cat { font-weight:600; font-size:0.85em; margin-bottom:0.5rem }
+    .finding .why { margin-bottom:0.5rem }
+    .finding .detail { font-size:0.85em; color:var(--muted) }
+    .finding .detail div { margin-top:0.25rem }
+    .footer { margin-top:2rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--muted); font-size:0.8rem; line-height:1.8 }
+    @media (max-width:600px) {
+      body { padding:0.75rem }
+      h1 { font-size:1.2rem }
+      .scores { gap:0.75rem }
+      .scores .passed, .scores .failed { font-size:1.2rem }
+      .pass-row { padding:0.6rem 0.75rem }
+      .pass-row .question { font-size:0.8rem }
+      .fail-card { padding:1rem }
+      .fail-header .question { font-size:0.85rem }
+      .answers { grid-template-columns:1fr; gap:0.5rem }
+      .finding { padding:0.75rem }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Agent Audit: resend.com</h1>
+    <div class="scores">
+      <span class="passed">3 passed</span>
+      <span class="failed" style="color:var(--red)">3 failed</span>
+    </div>
+    <p class="meta">6 issues across 10 questions &middot; Agent: OpenClaw (GPT-5.4)</p>
+    <p class="meta">Ground truth: 30 pages (295,603 chars)</p>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">How many custom domains can I add on Resend's Scale plan?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Resend have SOC 2 Type II or just Type I?</span></div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">What SMTP ports does resend support for STARTTLS vs SMTPS?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">STARTTLS: ports 25, 587, and 2587. SMTPS: ports 465 and 2465.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">I'm checking Resend's docs to verify the exact ports.
+Resend supports:
+
+- **STARTTLS:** port **587**
+- **SMTPS / implicit TLS:** port **465**
+
+If you want, I can also give you the exact Resend SMTP host and a ready-to-paste config snippet for Node, P...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">This omits supported ports and could mislead customers configuring SMTP who need port 25 or 2587.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> STARTTLS: port 587</div>
+        <div><strong>Actually:</strong> Resend supports STARTTLS on ports 25, 587, and 2587.</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">This leaves out a supported SMTPS port, which could cause customers to miss a valid configuration option.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> SMTPS / implicit TLS: port 465</div>
+        <div><strong>Actually:</strong> Resend supports SMTPS on ports 465 and 2465.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Resend encrypt data at rest? What encryption standard?</span></div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">Can I schedule emails to send at a future time with resend?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Yes. Resend supports scheduling: for transactional emails set the emails.send scheduledAt field (it accepts natural-language times like &quot;in 1 min&quot;), and broadcasts can be scheduled via the Send broadcast endpoint.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">Yes — but not natively in the simple "send this at X time" sense inside Resend itself.
+
+Typical options:
+
+- **Use your own scheduler**
+- Store the email + desired send time
+- Trigger a job later
+- Call the Resend API at that time
+
+- **Use a cron / qu...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">This falsely tells customers they need to build their own scheduler, which could discourage use of Resend's built-in scheduling features.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "not natively in the simple 'send this at X time' sense inside Resend itself" and "Resend is not usually the thing doing the scheduling for you"</div>
+        <div><strong>Actually:</strong> Resend does support native scheduling. For transactional emails you can set the emails.send `scheduledAt` field, and broadcasts can be scheduled via the Send broadcast endpoint.</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--yellow)">
+      <div class="cat" style="color:var(--yellow)">MISREPRESENTED</div>
+      <div class="why">It downplays a core capability and makes the product seem less capable than it is, potentially costing the company customers or feature adoption.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "The scheduling part is usually your responsibility"</div>
+        <div><strong>Actually:</strong> Resend itself offers scheduling capabilities for both transactional emails and broadcasts.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">Does resend support DMARC monitoring or analysis?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Yes. Resend supports DMARC by helping you create DMARC policies and instructing inbox providers how to treat unauthenticated email, provides a blog post on reading DMARC reports, and offers domain/DNS monitoring features to help manage related settin...</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">Not really — **Resend supports domain authentication setup**, but it's **not a dedicated DMARC monitoring/analysis platform**.
+
+In practice:
+
+- **Yes:** you can configure email auth records for your sending domain
+- SPF
+- DKIM
+- DMARC record itself
+-...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--yellow)">
+      <div class="cat" style="color:var(--yellow)">MISREPRESENTED</div>
+      <div class="why">This downplays an actual supported capability and could make customers think Resend lacks DMARC-related monitoring/analysis support altogether, potentially steering them away.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "Not really — Resend supports domain authentication setup, but it's not a dedicated DMARC monitoring/analysis platform" and "Can Resend act like a DMARC monitoring tool? → No"</div>
+        <div><strong>Actually:</strong> The ground truth says Resend does support DMARC, including helping create DMARC policies, providing guidance on reading DMARC reports, and offering domain/DNS monitoring features related to DMARC mana...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">Customers asking whether Resend supports DMARC monitoring or analysis could be misled into believing Resend has no meaningful DMARC-related monitoring/help, which contradicts the company-grounded answer.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "No / not really: Resend is not known for DMARC aggregate report parsing ... ongoing DMARC compliance monitoring across all senders"</div>
+        <div><strong>Actually:</strong> AgentBase explicitly says Resend offers DMARC-related support and domain/DNS monitoring features, plus educational material on reading DMARC reports.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Generated by <a href="https://github.com/bradmcnew/agent-audit">agent-audit</a><br>
+    Is this your company? <a href="https://agentbase.to/a/resend-com">Claim your agent endpoint &rarr;</a>
+  </div>
+</body>
+</html>

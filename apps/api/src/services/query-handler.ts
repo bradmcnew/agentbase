@@ -7,28 +7,30 @@
  */
 
 import { Context } from 'hono'
+import { eq, asc } from 'drizzle-orm'
 import { interactions } from '../db/schema'
 import { generateId } from '../utils/id'
-import { createSearchClient } from './azure-search'
-import { createOpenAIClient } from './azure-openai'
-import { chatWithProvider } from './llm-chat'
 import { errorResponse, serviceError, ErrorCode } from '../utils/errors'
 import { parseBody } from '../utils/validate'
 import { signPayload } from '../utils/hmac'
 import { decrypt } from '../utils/encrypt'
-import { QueryEndpointSchema, ENDPOINT_STATUS, ENDPOINT_MODE, PLAN_LIMITS } from '../types'
+import { QueryEndpointSchema, ENDPOINT_STATUS, PLAN_LIMITS } from '../types'
 import type { Env } from '../types'
 import type { EndpointRow } from '../middleware/resolve-endpoint'
 
-const SYSTEM_PROMPT = `Answer questions using ONLY the provided documents.
-Use short sentences. Include specific details: numbers, tool names, exact values.
-Do NOT use markdown formatting (bold, italics, headers).
-Do NOT cite source documents inline (sources are returned separately in the API response).
-Do NOT add disclaimers, caveats, or meta-commentary.
-If the answer is not in the documents, respond with exactly: "Not in knowledge base."`
+const CONFIDENCE_TAG_RE = /\n?\[CONFIDENCE:(confident|review|not_found)\|SOURCES:([^\]]*)\]\s*$/
+
+function parseConfidenceTag(raw: string): { answer: string; confidence: string | null; sources: string | null } {
+  const match = raw.match(CONFIDENCE_TAG_RE)
+  if (!match) return { answer: raw, confidence: null, sources: null }
+  const sources = match[2] === 'none' ? null : match[2]
+  return { answer: raw.slice(0, match.index!).trimEnd(), confidence: match[1], sources }
+}
 
 const WEBHOOK_TIMEOUT_MS = 30_000
 const QUOTA_WINDOW_MS = 24 * 60 * 60 * 1000 // 24 hours
+const MAX_HISTORY_TURNS = 5
+const MAX_HISTORY_CHARS = 8000
 
 export async function handleQuery(c: Context, ep: EndpointRow): Promise<Response> {
   const env = c.env as Env
@@ -40,8 +42,6 @@ export async function handleQuery(c: Context, ep: EndpointRow): Promise<Response
   if (data instanceof Response) return data
 
   // --- Daily quota: atomic reset+increment via raw D1 SQL ---
-  // Uses raw D1 (not Drizzle) because Drizzle's D1 driver doesn't support RETURNING.
-  // The WHERE guard prevents the counter from inflating past the limit on rejected requests.
   const now = Date.now()
   const nextReset = now + QUOTA_WINDOW_MS
   const dailyLimit = PLAN_LIMITS.free.queriesPerDay
@@ -61,8 +61,6 @@ export async function handleQuery(c: Context, ep: EndpointRow): Promise<Response
   `).bind(now, nextReset, ep.id, dailyLimit).first<{ query_count: number; query_count_reset_at: number }>()
 
   if (!quotaRow) {
-    // No row returned means either endpoint doesn't exist (shouldn't happen)
-    // or the counter already exceeded the limit (WHERE guard filtered it out)
     const retryAfter = Math.max(0, (ep.queryCountResetAt ?? 0) - now)
     c.header('Retry-After', String(Math.ceil(retryAfter / 1000)))
     c.header('X-RateLimit-Limit', String(dailyLimit))
@@ -72,148 +70,123 @@ export async function handleQuery(c: Context, ep: EndpointRow): Promise<Response
       'Daily query limit reached for this endpoint.')
   }
 
-  // Rate limit headers
   const resetAtISO = new Date(quotaRow.query_count_reset_at).toISOString()
   const remaining = dailyLimit - quotaRow.query_count
   c.header('X-RateLimit-Limit', String(dailyLimit))
   c.header('X-RateLimit-Remaining', String(Math.max(0, remaining)))
   c.header('X-RateLimit-Reset', resetAtISO)
 
-  // startTime excludes quota check — measures actual query processing (search + LLM)
   const startTime = Date.now()
 
   try {
+    if (!ep.webhookUrl) {
+      return errorResponse(c, 422, ErrorCode.QUERY_ERROR, 'Endpoint has no webhook URL configured')
+    }
+
+    const db = c.get('db')
+    const conversationId = data.conversation_id || null
+
+    // Load history + decrypt keys in parallel
+    const [history, apiKey, webhookSecretKey] = await Promise.all([
+      data.conversation_id
+        ? db.select({ query: interactions.query, response: interactions.response })
+            .from(interactions)
+            .where(eq(interactions.conversationId, data.conversation_id))
+            .orderBy(asc(interactions.createdAt))
+            .limit(MAX_HISTORY_TURNS)
+        : Promise.resolve([]),
+      ep.externalApiKey ? decrypt(ep.externalApiKey, env.ENCRYPTION_SECRET) : null,
+      ep.webhookSecret ? decrypt(ep.webhookSecret, env.ENCRYPTION_SECRET) : null,
+    ])
+
+    const messages: Array<{ role: string; content: string }> = []
+    if (ep.systemPrompt) messages.push({ role: 'system', content: ep.systemPrompt })
+    let historyChars = 0
+    for (const turn of history) {
+      const turnChars = turn.query.length + turn.response.length
+      if (historyChars + turnChars > MAX_HISTORY_CHARS) break
+      messages.push({ role: 'user', content: turn.query })
+      messages.push({ role: 'assistant', content: turn.response })
+      historyChars += turnChars
+    }
+    const userContent = data.context ? `${data.context}\n\n${data.query}` : data.query
+    messages.push({ role: 'user', content: userContent })
+
+    const webhookBody = JSON.stringify({
+      model: ep.externalModel || 'default',
+      messages,
+    })
+
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS)
+
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+    if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`
+    if (webhookSecretKey) {
+      const timestamp = Math.floor(Date.now() / 1000).toString()
+      const signature = await signPayload(`${timestamp}.${webhookBody}`, webhookSecretKey)
+      headers['X-AgentPort-Signature'] = signature
+      headers['X-AgentPort-Timestamp'] = timestamp
+    }
+
     let answer: string
-    let sources: Array<{ document: string; content: string; relevance: number }> = []
+    let confidence: string | null = null
+    let confidenceSources: string | null = null
     let promptTokens = 0
     let completionTokens = 0
 
-    if (ep.mode === ENDPOINT_MODE.EXTERNAL) {
-      // ---- EXTERNAL MODE: OpenAI-compatible chat completions ----
-      if (!ep.webhookUrl) {
-        return errorResponse(c, 422, ErrorCode.QUERY_ERROR, 'External endpoint has no webhook URL configured')
-      }
-
-      const controller = new AbortController()
-      const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS)
-
-      const systemPrompt = ep.systemPrompt || SYSTEM_PROMPT
-      const userContent = data.context ? `${data.context}\n\n${data.query}` : data.query
-      const webhookBody = JSON.stringify({
-        model: ep.externalModel || 'default',
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: userContent },
-        ],
+    try {
+      const res = await fetch(ep.webhookUrl, {
+        method: 'POST', headers, body: webhookBody, signal: controller.signal,
       })
+      clearTimeout(timeout)
 
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' }
-      if (ep.externalApiKey) {
-        const apiKey = await decrypt(ep.externalApiKey, env.ENCRYPTION_SECRET)
-        headers['Authorization'] = `Bearer ${apiKey}`
-      }
-      if (ep.webhookSecret) {
-        const secret = await decrypt(ep.webhookSecret, env.ENCRYPTION_SECRET)
-        const timestamp = Math.floor(Date.now() / 1000).toString()
-        const signature = await signPayload(`${timestamp}.${webhookBody}`, secret)
-        headers['X-AgentPort-Signature'] = signature
-        headers['X-AgentPort-Timestamp'] = timestamp
+      if (!res.ok) {
+        const body = (await res.text()).slice(0, 200)
+        throw new Error(`Webhook returned ${res.status}: ${body}`)
       }
 
-      try {
-        const res = await fetch(ep.webhookUrl, {
-          method: 'POST', headers, body: webhookBody, signal: controller.signal,
-        })
-        clearTimeout(timeout)
-
-        if (!res.ok) {
-          const body = (await res.text()).slice(0, 200)
-          throw new Error(`Webhook returned ${res.status}: ${body}`)
-        }
-
-        const webhookData = await res.json() as {
-          choices?: Array<{ message: { content: string } }>
-          usage?: { prompt_tokens?: number; completion_tokens?: number }
-        }
-
-        answer = webhookData.choices?.[0]?.message?.content || ''
-        promptTokens = webhookData.usage?.prompt_tokens || 0
-        completionTokens = webhookData.usage?.completion_tokens || 0
-      } catch (err) {
-        clearTimeout(timeout)
-        if (err instanceof Error && err.name === 'AbortError') {
-          throw new Error('Webhook timed out after 30 seconds')
-        }
-        throw err
-      }
-    } else {
-      // ---- PLATFORM / BYOK MODE: RAG pipeline ----
-      if (!ep.azureIndexName) {
-        return errorResponse(c, 422, ErrorCode.QUERY_ERROR, 'Endpoint has no search index')
+      const webhookData = await res.json() as {
+        choices?: Array<{ message: { content: string } }>
+        usage?: { prompt_tokens?: number; completion_tokens?: number }
       }
 
-      const openai = createOpenAIClient(env)
-      const search = createSearchClient(env)
-
-      const queryVector = await openai.embed(data.query)
-      const searchResults = await search.search(ep.azureIndexName, data.query, queryVector, data.max_sources)
-
-      if (searchResults.length === 0) {
-        return c.json({
-          answer: 'No relevant documents found. Please upload documents to this endpoint first.',
-          sources: [], usage: { input_tokens: 0, output_tokens: 0 },
-          interaction_id: generateId(),
-        })
+      const rawAnswer = webhookData.choices?.[0]?.message?.content || ''
+      const parsed = parseConfidenceTag(rawAnswer)
+      answer = parsed.answer
+      confidence = parsed.confidence
+      confidenceSources = parsed.sources
+      promptTokens = webhookData.usage?.prompt_tokens || 0
+      completionTokens = webhookData.usage?.completion_tokens || 0
+    } catch (err) {
+      clearTimeout(timeout)
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error('Webhook timed out after 30 seconds')
       }
-
-      const context = searchResults
-        .map((r, i) => `[Source ${i + 1}: ${r.filename}]\n${r.content}`)
-        .join('\n\n---\n\n')
-
-      const systemPrompt = ep.systemPrompt || SYSTEM_PROMPT
-      const queryText = data.context
-        ? `Additional context: ${data.context}\n\nQuestion: ${data.query}`
-        : data.query
-
-      const llmResult = await chatWithProvider(ep, env, systemPrompt, context, queryText)
-
-      answer = llmResult.answer
-      sources = searchResults.map(r => ({
-        document: r.filename,
-        content: r.content.slice(0, 200) + (r.content.length > 200 ? '...' : ''),
-        relevance: r.score,
-      }))
-      promptTokens = llmResult.promptTokens
-      completionTokens = llmResult.completionTokens
+      throw err
     }
 
     const latencyMs = Date.now() - startTime
     const interactionId = generateId()
-    const db = c.get('db')
 
-    // Log interaction (fire and forget)
     c.executionCtx.waitUntil(
       db.insert(interactions).values({
         id: interactionId, endpointId: ep.id,
         query: data.query, response: answer,
-        sources: JSON.stringify(sources),
         tokensInput: promptTokens, tokensOutput: completionTokens,
-        latencyMs,
+        latencyMs, confidence, confidenceSources, conversationId,
       })
     )
 
-    return c.json({
-      answer, sources,
-      usage: { input_tokens: promptTokens, output_tokens: completionTokens },
-      interaction_id: interactionId,
-    })
+    const response: Record<string, unknown> = { answer }
+    if (conversationId) response.conversation_id = conversationId
+    if (confidence) response.confidence = confidence
+    return c.json(response)
   } catch (err) {
-    // Surface upstream provider errors (e.g., "LLM API error 401: Invalid API key")
-    // so agents can self-diagnose BYOK key issues, webhook failures, etc.
     const msg = err instanceof Error ? err.message : ''
-    const upstreamMatch = msg.match(/^(LLM API|Anthropic API|Webhook).*?(\d{3})/)
+    const upstreamMatch = msg.match(/^Webhook.*?(\d{3})/)
     const userMessage = upstreamMatch
-      ? `Query failed: upstream returned ${upstreamMatch[2]}. Check your API key or webhook configuration.`
+      ? `Query failed: upstream returned ${upstreamMatch[1]}. Check your webhook configuration.`
       : 'Failed to process query. Please try again.'
     return serviceError(c, ErrorCode.QUERY_ERROR, userMessage, err)
   }

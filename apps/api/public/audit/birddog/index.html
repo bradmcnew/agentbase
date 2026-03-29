@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Agent Audit: getbirddog.ai</title>
+  <meta name="description" content="Agents are getting 3 things wrong about BirdDog. Setup time, pre-call alerts, and GDPR compliance.">
+  <meta property="og:title" content="Agent Audit: getbirddog.ai">
+  <meta property="og:description" content="Agents are getting 3 things wrong about BirdDog">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://agentbase.to/audit/birddog">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Agent Audit: getbirddog.ai">
+  <meta name="twitter:description" content="Agents are getting 3 things wrong about BirdDog">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#09090b; --fg:#fafafa; --border:#1e1e23; --surface:#060608; --surface-alt:#0d0d12; --muted:#9f9fa9; --fg-dim:#ccc; --green:#9ece6a; --red:#f7768e; --yellow:#e0af68; --purple:#bb9af7 }
+    * { margin:0; padding:0; box-sizing:border-box }
+    body { background:var(--bg); color:var(--fg); font-family:Inter,system-ui,sans-serif; line-height:1.6; padding:1.5rem; max-width:900px; margin:0 auto }
+    h1 { font-family:'JetBrains Mono',monospace; font-size:1.5rem; word-break:break-word }
+    a { color:var(--green); text-decoration:none }
+    .header { margin-bottom:2rem }
+    .scores { display:flex; gap:1.5rem; margin:1rem 0; font-family:'JetBrains Mono',monospace; flex-wrap:wrap }
+    .scores .passed { color:var(--green); font-size:1.5rem; font-weight:700 }
+    .scores .failed { font-size:1.5rem; font-weight:700 }
+    .meta { color:var(--muted); font-size:0.8em; line-height:1.8 }
+    .pass-row { margin:0.5rem 0; padding:0.75rem 1rem; border:1px solid var(--border); display:flex; align-items:baseline; gap:0.75rem }
+    .pass-row .label { color:var(--green); font-weight:600; font-size:0.85em; flex-shrink:0 }
+    .pass-row .question { font-family:'JetBrains Mono',monospace; font-size:0.9rem; word-break:break-word }
+    .fail-card { margin:1rem 0; padding:1.25rem; border:1px solid var(--border); background:var(--surface) }
+    .fail-header { margin-bottom:1rem; word-break:break-word; display:flex; align-items:baseline; gap:0.75rem }
+    .fail-header .label { color:var(--red); font-weight:600; flex-shrink:0 }
+    .fail-header .question { font-family:'JetBrains Mono',monospace; font-size:0.95rem }
+    .answers { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem; font-size:0.8em }
+    .answer-box { padding:0.75rem; border:1px solid var(--border); min-width:0 }
+    .answer-box .source { font-weight:600; font-size:0.8em; margin-bottom:0.25rem }
+    .answer-box.truth .source { color:var(--green) }
+    .answer-box.agent .source { color:var(--yellow) }
+    .answer-box .text { color:var(--fg-dim); word-break:break-word }
+    .finding { margin-bottom:0.75rem; padding:1rem; background:var(--surface-alt) }
+    .finding:last-child { margin-bottom:0 }
+    .finding .cat { font-weight:600; font-size:0.85em; margin-bottom:0.5rem }
+    .finding .why { margin-bottom:0.5rem }
+    .finding .detail { font-size:0.85em; color:var(--muted) }
+    .finding .detail div { margin-top:0.25rem }
+    .footer { margin-top:2rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--muted); font-size:0.8rem; line-height:1.8 }
+    @media (max-width:600px) {
+      body { padding:0.75rem }
+      h1 { font-size:1.2rem }
+      .scores { gap:0.75rem }
+      .scores .passed, .scores .failed { font-size:1.2rem }
+      .pass-row { padding:0.6rem 0.75rem }
+      .pass-row .question { font-size:0.8rem }
+      .fail-card { padding:1rem }
+      .fail-header .question { font-size:0.85rem }
+      .answers { grid-template-columns:1fr; gap:0.5rem }
+      .finding { padding:0.75rem }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Agent Audit: getbirddog.ai</h1>
+    <div class="scores">
+      <span class="passed">12 passed</span>
+      <span class="failed" style="color:var(--red)">3 failed</span>
+    </div>
+    <p class="meta">3 issues across 15 questions &middot; Agent: GPT-5.4 (web search)</p>
+    <p class="meta">Ground truth: 38 pages from getbirddog.ai + docs.getbirddog.ai</p>
+  </div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">How long does it take to set up BirdDog?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Initial setup is fast: uploading accounts takes under 5 minutes, creating signals takes about 10-15 minutes, and setting up Farsight takes under 5 minutes. So the core setup is roughly 20-25 minutes. After that, accounts are researched and scored within 20-60 minutes, first Farsight recommendations arrive within 2 hours, and BirdDog says you should get guaranteed signals on the first day.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">BirdDog's onboarding involves several calls with their founding team. The CRM integration itself (e.g., HubSpot) is typically completable within an hour, but expect a calibration period during the first week as the system syncs with your CRM. There is no self-serve instant setup; onboarding is hands-on with their team.</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">The agent says there's "no self-serve instant setup" and onboarding "involves several calls." BirdDog's docs show a self-serve quickstart that takes about 25 minutes. A potential customer could be discouraged by the false impression that setup is complex and high-touch.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "There is no self-serve instant setup; onboarding is hands-on with their team."</div>
+        <div><strong>Actually:</strong> BirdDog's quickstart guide shows: upload accounts (under 5 min), create signals (10-15 min), configure Farsight (under 5 min). First signals arrive within 20-60 minutes.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">Can I get alerts before a sales call with context on the account?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Yes. If you connect Google Calendar, BirdDog acts as a pre-meeting research assistant and sends a Pre-Meeting Intelligence brief 24 hours before the meeting. That brief includes: the Why Now summary, recent signals from the last 180 days, company background, and direct source links.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">BirdDog does not appear to have a dedicated pre-call briefing feature that triggers alerts timed to your calendar. However, it sends daily morning alerts (via email, Slack, or Teams) with recent signals on your accounts, and its dashboard shows a Top Articles Newsfeed. This information can be used for call prep, but it is not automatically tied to your meeting schedule.</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">The agent says BirdDog has no pre-call briefing feature. It does: BirdDog's Google Calendar integration sends automated pre-meeting briefs 24 hours before scheduled calls. A sales rep relying on this answer would miss a key feature.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "BirdDog does not appear to have a dedicated pre-call briefing feature that triggers alerts timed to your calendar."</div>
+        <div><strong>Actually:</strong> BirdDog's Google Calendar integration sends a pre-meeting intelligence brief by email 24 hours before meetings, including Why Now context, recent signals, and source links.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">Does BirdDog support GDPR compliance?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Yes. BirdDog's legal terms say each party must comply with applicable laws including GDPR, and its data policy says BirdDog is committed to handling data in accordance with global privacy laws including GDPR. Individuals can request access, correction, deletion, or exclusion, and BirdDog will verify and respond within 15 days.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">I could not find any specific information about BirdDog's GDPR compliance on their website or documentation. BirdDog only monitors publicly available data sources (not personal browsing behavior or cookies), which may reduce GDPR exposure, but there is no public statement on their GDPR posture.</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">The agent says there's no public information on GDPR compliance. BirdDog has a published data policy page with explicit GDPR language. A compliance-conscious buyer could wrongly rule out BirdDog based on this answer.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "I could not find any specific information about BirdDog's GDPR compliance."</div>
+        <div><strong>Actually:</strong> BirdDog's data policy (getbirddog.ai/data-policy) explicitly addresses GDPR, data subject rights, and a 15-day response commitment.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">What does BirdDog do?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">How much does BirdDog cost?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does BirdDog work with Salesforce?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does BirdDog work with HubSpot?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Can BirdDog send alerts to Slack?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">What kind of data does BirdDog track?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Can BirdDog find new accounts for us to target?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">How is BirdDog different from intent data tools like 6sense or Bombora?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does BirdDog have an API we can integrate with?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Can BirdDog track competitor activity?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">How do I create a custom signal in BirdDog?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">What happens if I delete an account?</span></div>
+
+  <div class="footer">
+    Audit date: 2026-03-28 &middot; 15 questions &middot; Ground truth: 38 pages<br>
+    <a href="/a/getbirddog-ai/logs">Live agent logs with confidence scoring</a> &middot; <a href="/a/getbirddog-ai/skill.md">SKILL.md</a><br>
+    Generated by <a href="https://github.com/bradmcnew/agent-audit">agent-audit</a> &middot; Is this your company? <a href="https://agentbase.to">Claim your agent endpoint &rarr;</a>
+  </div>
+</body>
+</html>

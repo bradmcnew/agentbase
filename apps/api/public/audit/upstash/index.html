@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Agent Audit: upstash.com</title>
+  <meta name="description" content="Agents are getting 3 things wrong about Upstash. FIFO delivery, price capping, and hybrid vector search.">
+  <meta property="og:title" content="Agent Audit: upstash.com">
+  <meta property="og:description" content="Agents are getting 3 things wrong about Upstash">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://agentbase.to/audit/upstash">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Agent Audit: upstash.com">
+  <meta name="twitter:description" content="Agents are getting 3 things wrong about Upstash">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#09090b; --fg:#fafafa; --border:#1e1e23; --surface:#060608; --surface-alt:#0d0d12; --muted:#9f9fa9; --fg-dim:#ccc; --green:#9ece6a; --red:#f7768e; --yellow:#e0af68; --purple:#bb9af7 }
+    * { margin:0; padding:0; box-sizing:border-box }
+    body { background:var(--bg); color:var(--fg); font-family:Inter,system-ui,sans-serif; line-height:1.6; padding:1.5rem; max-width:900px; margin:0 auto }
+    h1 { font-family:'JetBrains Mono',monospace; font-size:1.5rem; word-break:break-word }
+    a { color:var(--green); text-decoration:none }
+    .header { margin-bottom:2rem }
+    .scores { display:flex; gap:1.5rem; margin:1rem 0; font-family:'JetBrains Mono',monospace; flex-wrap:wrap }
+    .scores .passed { color:var(--green); font-size:1.5rem; font-weight:700 }
+    .scores .failed { font-size:1.5rem; font-weight:700 }
+    .meta { color:var(--muted); font-size:0.8em; line-height:1.8 }
+    .pass-row { margin:0.5rem 0; padding:0.75rem 1rem; border:1px solid var(--border); display:flex; align-items:baseline; gap:0.75rem }
+    .pass-row .label { color:var(--green); font-weight:600; font-size:0.85em; flex-shrink:0 }
+    .pass-row .question { font-family:'JetBrains Mono',monospace; font-size:0.9rem; word-break:break-word }
+    .fail-card { margin:1rem 0; padding:1.25rem; border:1px solid var(--border); background:var(--surface) }
+    .fail-header { margin-bottom:1rem; word-break:break-word; display:flex; align-items:baseline; gap:0.75rem }
+    .fail-header .label { color:var(--red); font-weight:600; flex-shrink:0 }
+    .fail-header .question { font-family:'JetBrains Mono',monospace; font-size:0.95rem }
+    .answers { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem; font-size:0.8em }
+    .answer-box { padding:0.75rem; border:1px solid var(--border); min-width:0 }
+    .answer-box .source { font-weight:600; font-size:0.8em; margin-bottom:0.25rem }
+    .answer-box.truth .source { color:var(--green) }
+    .answer-box.agent .source { color:var(--yellow) }
+    .answer-box .text { color:var(--fg-dim); word-break:break-word }
+    .finding { margin-bottom:0.75rem; padding:1rem; background:var(--surface-alt) }
+    .finding:last-child { margin-bottom:0 }
+    .finding .cat { font-weight:600; font-size:0.85em; margin-bottom:0.5rem }
+    .finding .why { margin-bottom:0.5rem }
+    .finding .detail { font-size:0.85em; color:var(--muted) }
+    .finding .detail div { margin-top:0.25rem }
+    .footer { margin-top:2rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--muted); font-size:0.8rem; line-height:1.8 }
+    @media (max-width:600px) {
+      body { padding:0.75rem }
+      h1 { font-size:1.2rem }
+      .scores { gap:0.75rem }
+      .scores .passed, .scores .failed { font-size:1.2rem }
+      .pass-row { padding:0.6rem 0.75rem }
+      .pass-row .question { font-size:0.8rem }
+      .fail-card { padding:1rem }
+      .fail-header .question { font-size:0.85rem }
+      .answers { grid-template-columns:1fr; gap:0.5rem }
+      .finding { padding:0.75rem }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Agent Audit: upstash.com</h1>
+    <div class="scores">
+      <span class="passed">16 passed</span>
+      <span class="failed" style="color:var(--red)">3 failed</span>
+    </div>
+    <p class="meta">3 failures across 20 questions &middot; Agent: OpenClaw (GPT-5.4)</p>
+    <p class="meta">Ground truth: 135 pages (997,687 chars)</p>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Upstash have a durable workflow orchestration engine?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Upstash offer a serverless vector database for AI applications?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Can Upstash Redis be accessed over HTTP without a persistent TCP connection?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Upstash have a built-in rate limiting library?</span></div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">Does Upstash QStash support FIFO delivery ordering?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Yes. QStash supports FIFO delivery: you can enqueue messages to be delivered one by one in the order they were enqueued.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">No — QStash does not provide strict FIFO delivery ordering guarantees across messages. If you need true ordered processing, you generally have to enforce ordering yourself...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">Customers would be misled into thinking QStash cannot satisfy ordered-delivery use cases and build unnecessary workarounds.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "No — QStash does not provide strict FIFO delivery ordering guarantees."</div>
+        <div><strong>Actually:</strong> Upstash docs: Messages are "sent one by one in FIFO order" and "ordered delivery is guaranteed by default."</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Can QStash schedule messages to be delivered at a specific future time?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Upstash support global data replication across multiple regions?</span></div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">Can Upstash Redis guarantee a maximum monthly bill with price capping?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Yes. Upstash provides a budget cap feature where you set a maximum monthly budget. If usage exceeds your cap, the database is rate limited and you won't be charged beyond your chosen limit.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">Usually no, not in the strict "hard cap, service stops charging" sense. Upstash Redis pricing is usage-based, and while they may provide free tiers, spend visibility, and alerts, don't assume there's a guaranteed max bill by default...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">Cost-sensitive customers specifically want bill protection and would be deterred by the agent saying it doesn't exist.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "Usually no, not in the strict hard cap sense" — frames price controls as just alerts and spend visibility.</div>
+        <div><strong>Actually:</strong> Upstash docs: "You can set a maximum monthly budget. If usage exceeds your monthly budget cap, your database will be rate limited and your cost will not exceed your chosen budget limit."</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Upstash have a built-in full-text search product?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Can Upstash Workflow steps automatically retry on failure?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">What is the free tier limit for Upstash Redis commands per month?</span></div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">Can Upstash Vector do hybrid search combining vector similarity with metadata filters?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Yes. Upstash supports hybrid indexes that query and fuse dense and sparse results, and also supports metadata filters on queries. You can combine hybrid search with metadata filtering.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">Yes — Upstash Vector supports vector similarity search with metadata filtering. But dense vector + keyword/BM25 blended scoring ("true hybrid search" in the Elasticsearch/Pinecone sense) is not what people usually mean by Upstash hybrid search...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--yellow)">
+      <div class="cat" style="color:var(--yellow)">MISREPRESENTED</div>
+      <div class="why">A customer could wrongly conclude Upstash lacks real hybrid search and choose another vector database.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> Dense+keyword blended scoring "is not what people usually mean by Upstash hybrid search."</div>
+        <div><strong>Actually:</strong> Upstash docs: "Hybrid indexes allow you to combine dense and sparse results" with Reciprocal Rank Fusion and Distribution-Based Score Fusion algorithms.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Upstash Vector support metadata filtering on queries?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Can QStash publish messages to multiple endpoints in parallel?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Upstash Workflow support waiting for external events before continuing?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Can you use Upstash Workflow to build AI agents with tool calling?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Upstash Workflow support human-in-the-loop approval steps?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Can Upstash Vector run embedding generation server-side?</span></div>
+
+  <div class="footer">
+    Generated by <a href="https://github.com/bradmcnew/agent-audit">agent-audit</a><br>
+    Is this your company? <a href="https://agentbase.to/a/upstash-com">Claim your agent endpoint &rarr;</a>
+  </div>
+</body>
+</html>

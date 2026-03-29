@@ -6,7 +6,6 @@ import customDomainRoutes from './routes/custom-domain'
 import platformRoutes from './routes/platform'
 import accountRoutes from './routes/accounts'
 import endpointRoutes from './routes/endpoints'
-import documentRoutes from './routes/documents'
 import agentRoutes from './routes/agent'
 import skillRoutes from './routes/skills'
 import queryRoutes from './routes/query'
@@ -29,7 +28,6 @@ app.route('/', agentRoutes)
 app.route('/', accountRoutes)
 app.route('/', skillRoutes)
 app.route('/', endpointRoutes)
-app.route('/', documentRoutes)
 app.route('/', queryRoutes)
 
 app.notFound((c) => {

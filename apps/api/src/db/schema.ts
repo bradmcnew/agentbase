@@ -16,19 +16,15 @@ export const endpoints = sqliteTable('endpoints', {
   slug: text('slug').notNull(),
   name: text('name').notNull(),
   description: text('description'),
-  azureIndexName: text('azure_index_name'),  // null for external mode
-  mode: text('mode').notNull().default('platform'),  // platform | byok | external
-  webhookUrl: text('webhook_url'),            // external mode
-  llmProvider: text('llm_provider'),          // byok mode: openai | anthropic
-  llmApiKey: text('llm_api_key'),             // byok mode: customer's key
-  llmModel: text('llm_model'),               // platform/byok: model name
-  webhookSecret: text('webhook_secret'),     // external mode: HMAC signing secret
+  mode: text('mode').notNull().default('external'),
+  webhookUrl: text('webhook_url'),
+  webhookSecret: text('webhook_secret'),
   capabilities: text('capabilities').notNull().default('[]'),
   systemPrompt: text('system_prompt'),
   skillMd: text('skill_md'),
-  externalModel: text('external_model'),     // external mode: model name for OpenAI-compatible endpoint
-  externalApiKey: text('external_api_key'),   // external mode: encrypted Bearer token
-  customDomain: text('custom_domain'),   // e.g., "docs.acme.com"
+  externalModel: text('external_model'),
+  externalApiKey: text('external_api_key'),
+  customDomain: text('custom_domain'),
   queryCount: integer('query_count').notNull().default(0),
   queryCountResetAt: integer('query_count_reset_at').notNull().default(0),
   status: text('status').notNull().default('active'),
@@ -42,11 +38,14 @@ export const interactions = sqliteTable('interactions', {
   endpointId: text('endpoint_id').notNull().references(() => endpoints.id),
   query: text('query').notNull(),
   response: text('response').notNull(),
-  sources: text('sources'),
   tokensInput: integer('tokens_input'),
   tokensOutput: integer('tokens_output'),
   latencyMs: integer('latency_ms'),
+  confidence: text('confidence'),
+  confidenceSources: text('confidence_sources'),
+  conversationId: text('conversation_id'),
   createdAt: text('created_at').notNull().default(sql`(datetime('now'))`),
 }, (table) => [
   index('idx_interactions_endpoint').on(table.endpointId, table.createdAt),
+  index('idx_interactions_conversation').on(table.conversationId, table.createdAt),
 ])

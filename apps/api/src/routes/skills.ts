@@ -30,7 +30,7 @@ app.post('/v1/endpoints/:slug/skill', authMiddleware, resolveEndpoint as any, as
   const skillMd = generateSkillMd({
     slug: ep.slug, name: ep.name, description: ep.description,
     capabilities: safeJsonParse(ep.capabilities, []),
-    baseUrl, endpointId: ep.id, mode: ep.mode,
+    baseUrl, endpointId: ep.id,
     customDomain: ep.customDomain,
   })
 

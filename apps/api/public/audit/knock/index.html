@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Agent Audit: knock.app</title>
+  <meta name="description" content="Agents are getting 3 things wrong about Knock. Throttling, workflow fetch steps, and Cursor/Claude Code support.">
+  <meta property="og:title" content="Agent Audit: knock.app">
+  <meta property="og:description" content="Agents are getting 3 things wrong about Knock">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://agentbase.to/audit/knock">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Agent Audit: knock.app">
+  <meta name="twitter:description" content="Agents are getting 3 things wrong about Knock">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#09090b; --fg:#fafafa; --border:#1e1e23; --surface:#060608; --surface-alt:#0d0d12; --muted:#9f9fa9; --fg-dim:#ccc; --green:#9ece6a; --red:#f7768e; --yellow:#e0af68; --purple:#bb9af7 }
+    * { margin:0; padding:0; box-sizing:border-box }
+    body { background:var(--bg); color:var(--fg); font-family:Inter,system-ui,sans-serif; line-height:1.6; padding:1.5rem; max-width:900px; margin:0 auto }
+    h1 { font-family:'JetBrains Mono',monospace; font-size:1.5rem; word-break:break-word }
+    a { color:var(--green); text-decoration:none }
+    .header { margin-bottom:2rem }
+    .scores { display:flex; gap:1.5rem; margin:1rem 0; font-family:'JetBrains Mono',monospace; flex-wrap:wrap }
+    .scores .passed { color:var(--green); font-size:1.5rem; font-weight:700 }
+    .scores .failed { font-size:1.5rem; font-weight:700 }
+    .meta { color:var(--muted); font-size:0.8em; line-height:1.8 }
+    .pass-row { margin:0.5rem 0; padding:0.75rem 1rem; border:1px solid var(--border); display:flex; align-items:baseline; gap:0.75rem }
+    .pass-row .label { color:var(--green); font-weight:600; font-size:0.85em; flex-shrink:0 }
+    .pass-row .question { font-family:'JetBrains Mono',monospace; font-size:0.9rem; word-break:break-word }
+    .fail-card { margin:1rem 0; padding:1.25rem; border:1px solid var(--border); background:var(--surface) }
+    .fail-header { margin-bottom:1rem; word-break:break-word; display:flex; align-items:baseline; gap:0.75rem }
+    .fail-header .label { color:var(--red); font-weight:600; flex-shrink:0 }
+    .fail-header .question { font-family:'JetBrains Mono',monospace; font-size:0.95rem }
+    .answers { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem; font-size:0.8em }
+    .answer-box { padding:0.75rem; border:1px solid var(--border); min-width:0 }
+    .answer-box .source { font-weight:600; font-size:0.8em; margin-bottom:0.25rem }
+    .answer-box.truth .source { color:var(--green) }
+    .answer-box.agent .source { color:var(--yellow) }
+    .answer-box .text { color:var(--fg-dim); word-break:break-word }
+    .finding { margin-bottom:0.75rem; padding:1rem; background:var(--surface-alt) }
+    .finding:last-child { margin-bottom:0 }
+    .finding .cat { font-weight:600; font-size:0.85em; margin-bottom:0.5rem }
+    .finding .why { margin-bottom:0.5rem }
+    .finding .detail { font-size:0.85em; color:var(--muted) }
+    .finding .detail div { margin-top:0.25rem }
+    .footer { margin-top:2rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--muted); font-size:0.8rem; line-height:1.8 }
+    @media (max-width:600px) {
+      body { padding:0.75rem }
+      h1 { font-size:1.2rem }
+      .scores { gap:0.75rem }
+      .scores .passed, .scores .failed { font-size:1.2rem }
+      .pass-row { padding:0.6rem 0.75rem }
+      .pass-row .question { font-size:0.8rem }
+      .fail-card { padding:1rem }
+      .fail-header .question { font-size:0.85rem }
+      .answers { grid-template-columns:1fr; gap:0.5rem }
+      .finding { padding:0.75rem }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Agent Audit: knock.app</h1>
+    <div class="scores">
+      <span class="passed">7 passed</span>
+      <span class="failed" style="color:var(--red)">3 failed</span>
+    </div>
+    <p class="meta">5 issues across 10 questions &middot; Agent: OpenClaw (GPT-5.4)</p>
+    <p class="meta">Ground truth: 58 pages (1,022,936 chars)</p>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Knock have an Agent Toolkit that lets AI agents send notifications?</span></div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">Does Knock support notification throttling to prevent overwhelming users?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Yes. Knock provides intelligent throttling and built-in rate limiting to prioritize message ordering and prevent notification fatigue.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">Yes — Knock supports this, though it's usually framed as batching/digests and workflow controls rather than a single "throttle" switch. I did not see evidence of a simple built-in global "max N notifications per user per hour" control...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">A customer could wrongly conclude Knock lacks built-in throttling and rule it out.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "I did not see evidence of a built-in throttle" — frames it as batching/digests only.</div>
+        <div><strong>Actually:</strong> Knock docs: "A throttle function allows you to limit the number of times a workflow is executed for a recipient within a given window." Dedicated workflow step with configurable windows.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Knock support object-level subscriptions for project or document followers?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Can Knock schedule recurring notifications per-user in their own timezone?</span></div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">Can Knock workflows fetch data from external APIs mid-execution?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Yes. Knock workflows have a native Fetch function step that makes HTTP requests to external services during execution. Supports GET, POST, PUT, DELETE, PATCH with auto-retries and configurable response paths.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">Knock workflows can fetch external data during execution, but typically not by making arbitrary server-side API calls natively. Mid-execution enrichment is usually via your own app/service or custom code step, not as a fully open HTTP fetch...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">Customers could dismiss Knock or build unnecessary infrastructure because the agent says native mid-workflow API fetching doesn't exist.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "Not by making arbitrary server-side API calls natively" — suggests you need your own service.</div>
+        <div><strong>Actually:</strong> Knock docs: "A fetch function executes an HTTP request as a step in a workflow." Supports GET/POST/PUT/DELETE/PATCH with auto-retries.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Knock only charge for messages sent, not for workflow triggers?</span></div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">Can I use Knock entirely from Cursor or Claude Code without touching the dashboard?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Yes. Knock is described as "the only customer engagement platform you can work with entirely from Cursor or Claude Code," using environments, version control, and the Knock CLI.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">Not entirely. Knock supports a CLI workflow for working from the terminal/editor, and their docs call out using it with AI coding agents like Cursor and Claude Code. But not literally every possible account/admin action without ever touching the dashbo...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--yellow)">
+      <div class="cat" style="color:var(--yellow)">MISREPRESENTED</div>
+      <div class="why">This directly undermines a core product positioning claim and could discourage customers evaluating the Cursor/Claude Code workflow.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "Not entirely" and "you'll usually still need the dashboard" for some tasks.</div>
+        <div><strong>Actually:</strong> Knock homepage: "The only customer engagement platform you can work with entirely from Cursor or Claude Code."</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Knock support sending notifications to Slack channels?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Knock have built-in support for Microsoft Teams?</span></div>
+
+  <div class="footer">
+    Generated by <a href="https://github.com/bradmcnew/agent-audit">agent-audit</a><br>
+    Is this your company? <a href="https://agentbase.to/a/knock-app">Claim your agent endpoint &rarr;</a>
+  </div>
+</body>
+</html>

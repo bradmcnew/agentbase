@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Agent Audit: neon.com</title>
+  <meta name="description" content="Agents are getting 3 things wrong about Neon. Read replica scaling, branch pricing, and cross-region replication.">
+  <meta property="og:title" content="Agent Audit: neon.com">
+  <meta property="og:description" content="Agents are getting 3 things wrong about Neon">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://agentbase.to/audit/neon">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Agent Audit: neon.com">
+  <meta name="twitter:description" content="Agents are getting 3 things wrong about Neon">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#09090b; --fg:#fafafa; --border:#1e1e23; --surface:#060608; --surface-alt:#0d0d12; --muted:#9f9fa9; --fg-dim:#ccc; --green:#9ece6a; --red:#f7768e; --yellow:#e0af68; --purple:#bb9af7 }
+    * { margin:0; padding:0; box-sizing:border-box }
+    body { background:var(--bg); color:var(--fg); font-family:Inter,system-ui,sans-serif; line-height:1.6; padding:1.5rem; max-width:900px; margin:0 auto }
+    h1 { font-family:'JetBrains Mono',monospace; font-size:1.5rem; word-break:break-word }
+    a { color:var(--green); text-decoration:none }
+    .header { margin-bottom:2rem }
+    .scores { display:flex; gap:1.5rem; margin:1rem 0; font-family:'JetBrains Mono',monospace; flex-wrap:wrap }
+    .scores .passed { color:var(--green); font-size:1.5rem; font-weight:700 }
+    .scores .failed { font-size:1.5rem; font-weight:700 }
+    .meta { color:var(--muted); font-size:0.8em; line-height:1.8 }
+    .pass-row { margin:0.5rem 0; padding:0.75rem 1rem; border:1px solid var(--border); display:flex; align-items:baseline; gap:0.75rem }
+    .pass-row .label { color:var(--green); font-weight:600; font-size:0.85em; flex-shrink:0 }
+    .pass-row .question { font-family:'JetBrains Mono',monospace; font-size:0.9rem; word-break:break-word }
+    .fail-card { margin:1rem 0; padding:1.25rem; border:1px solid var(--border); background:var(--surface) }
+    .fail-header { margin-bottom:1rem; word-break:break-word; display:flex; align-items:baseline; gap:0.75rem }
+    .fail-header .label { color:var(--red); font-weight:600; flex-shrink:0 }
+    .fail-header .question { font-family:'JetBrains Mono',monospace; font-size:0.95rem }
+    .answers { display:grid; grid-template-columns:1fr 1fr; gap:0.75rem; margin-bottom:1rem; font-size:0.8em }
+    .answer-box { padding:0.75rem; border:1px solid var(--border); min-width:0 }
+    .answer-box .source { font-weight:600; font-size:0.8em; margin-bottom:0.25rem }
+    .answer-box.truth .source { color:var(--green) }
+    .answer-box.agent .source { color:var(--yellow) }
+    .answer-box .text { color:var(--fg-dim); word-break:break-word }
+    .finding { margin-bottom:0.75rem; padding:1rem; background:var(--surface-alt) }
+    .finding:last-child { margin-bottom:0 }
+    .finding .cat { font-weight:600; font-size:0.85em; margin-bottom:0.5rem }
+    .finding .why { margin-bottom:0.5rem }
+    .finding .detail { font-size:0.85em; color:var(--muted) }
+    .finding .detail div { margin-top:0.25rem }
+    .footer { margin-top:2rem; padding-top:1rem; border-top:1px solid var(--border); color:var(--muted); font-size:0.8rem; line-height:1.8 }
+    @media (max-width:600px) {
+      body { padding:0.75rem }
+      h1 { font-size:1.2rem }
+      .scores { gap:0.75rem }
+      .scores .passed, .scores .failed { font-size:1.2rem }
+      .pass-row { padding:0.6rem 0.75rem }
+      .pass-row .question { font-size:0.8rem }
+      .fail-card { padding:1rem }
+      .fail-header .question { font-size:0.85rem }
+      .answers { grid-template-columns:1fr; gap:0.5rem }
+      .finding { padding:0.75rem }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Agent Audit: neon.com</h1>
+    <div class="scores">
+      <span class="passed">6 passed</span>
+      <span class="failed" style="color:var(--red)">3 failed</span>
+    </div>
+    <p class="meta">4 issues across 10 questions &middot; Agent: OpenClaw (GPT-5.4)</p>
+    <p class="meta">Ground truth: 34 pages (668,536 chars)</p>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Neon support schema diff between database branches?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Can I query my Neon database at a previous point in time without restoring?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">Does Neon support manual snapshots and how many can I have on the free plan?</span></div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">Can Neon read replicas scale to zero independently?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Yes. Neon read replicas support Scale to Zero independently — you can allow a read replica to scale to zero when idle, and when it starts up on demand it is almost instantly up to date with the primary compute.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">No. In Neon, compute scales at the project/branch level, and read replicas are separate compute endpoints, but they don't have an independent "scale to zero on their own while primary stays warm" behavior...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">This directly contradicts a core product capability. A customer asking this exact question would be misled into thinking Neon can't do something it explicitly supports.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "No" — read replicas don't have independent scale-to-zero behavior.</div>
+        <div><strong>Actually:</strong> Neon docs: "Read replicas can independently scale up or down to zero, which makes them pair well with Neon's autoscaling feature for varying workloads."</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">What happens to scale-to-zero when using logical replication on Neon?</span></div>
+  <div class="pass-row"><span class="label">PASS</span><span class="question">How much storage does Neon's free plan include?</span></div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">What is the cost per extra branch per month on Neon?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">$1.50 per extra branch-month (approximately $0.002 per hour).</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">Neon doesn't appear to charge a flat "per extra branch per month" fee. Branching is included on Neon plans, including Free. You pay based on usage instead: compute (CU-hours) and storage (GB-month). So the short answer is: $0 fixed per extra branch...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">This gives customers the opposite pricing information and could cause them to underestimate costs.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "$0 fixed per extra branch/month" — Neon doesn't charge per branch.</div>
+        <div><strong>Actually:</strong> Neon docs: "Extra branches beyond your plan's allowance are billed at $1.50/branch-month (~$0.002/hour)."</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="fail-card">
+    <div class="fail-header">
+      <span class="label">FAIL</span>
+      <span class="question">Does Neon support cross-region replication?</span>
+    </div>
+    <div class="answers">
+      <div class="answer-box truth">
+        <div class="source">AGENTBASE</div>
+        <div class="text">Neon does not support creating read replicas in a different region; read replicas must be in the same region as the database. To achieve cross-region replication, create a Neon project in the target region and replicate data via logical replication.</div>
+      </div>
+      <div class="answer-box agent">
+        <div class="source">AGENT</div>
+        <div class="text">Yes — Neon supports cross-region replication via read replicas in other regions. A few caveats: it's generally asynchronous replication, so expect some replication lag. It's mainly for read scaling / lower-latency reads / disaster recovery...</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--red)">
+      <div class="cat" style="color:var(--red)">WRONG</div>
+      <div class="why">A customer would be directly misled about how to architect their deployment. Read replicas are same-region only — cross-region requires a completely different setup.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> "Neon supports cross-region replication via read replicas in other regions."</div>
+        <div><strong>Actually:</strong> Neon docs: "Neon only supports creating read replicas in the same region as your database." Cross-region requires logical replication between separate projects.</div>
+      </div>
+    </div>
+    <div class="finding" style="border-left:3px solid var(--yellow)">
+      <div class="cat" style="color:var(--yellow)">MISREPRESENTED</div>
+      <div class="why">This misstates how the product works and hides the actual setup customers need, which can cause implementation mistakes and lost trust.</div>
+      <div class="detail">
+        <div><strong>Agent said:</strong> Frames cross-region as a built-in read replica feature with caveats about async lag.</div>
+        <div><strong>Actually:</strong> Cross-region requires creating a separate Neon project in another region and setting up logical replication — a fundamentally different mechanism.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="pass-row"><span class="label">PASS</span><span class="question">How many connection pooling connections does Neon support?</span></div>
+
+  <div class="footer">
+    Generated by <a href="https://github.com/bradmcnew/agent-audit">agent-audit</a><br>
+    Is this your company? <a href="https://agentbase.to/a/neon-com">Claim your agent endpoint &rarr;</a>
+  </div>
+</body>
+</html>

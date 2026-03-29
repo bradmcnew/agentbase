@@ -3,7 +3,7 @@ import { eq, desc } from 'drizzle-orm'
 import { interactions } from '../db/schema'
 import { authMiddleware } from '../middleware/auth'
 import { resolveEndpoint } from '../middleware/resolve-endpoint'
-import { safeJsonParse, parseIntParam } from '../utils/validate'
+import { parseIntParam } from '../utils/validate'
 import type { Env, AppVariables } from '../types'
 
 const app = new Hono<{ Bindings: Env; Variables: AppVariables }>()
@@ -19,8 +19,9 @@ app.get('/v1/endpoints/:slug/interactions', authMiddleware, resolveEndpoint as a
   const results = await db
     .select({
       id: interactions.id, query: interactions.query, response: interactions.response,
-      sources: interactions.sources, tokensInput: interactions.tokensInput,
+      tokensInput: interactions.tokensInput,
       tokensOutput: interactions.tokensOutput, latencyMs: interactions.latencyMs,
+      confidence: interactions.confidence, confidenceSources: interactions.confidenceSources,
       createdAt: interactions.createdAt,
     })
     .from(interactions)
@@ -29,11 +30,7 @@ app.get('/v1/endpoints/:slug/interactions', authMiddleware, resolveEndpoint as a
     .limit(limit)
     .offset(offset)
 
-  return c.json({
-    interactions: results.map(r => ({
-      ...r, sources: safeJsonParse(r.sources, []),
-    })),
-  })
+  return c.json({ interactions: results })
 })
 
 export default app

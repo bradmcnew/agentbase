@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>BirdDog | Real-Time Sales Signals & Automated Research</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box }
+    body { background:#fafafa; font-family:'Inter',sans-serif; color:#000 }
+    nav { display:flex; justify-content:space-between; align-items:center; padding:20px 60px }
+    nav .logo { font-size:20px; font-weight:700 }
+    nav .links { display:flex; gap:24px; font-size:14px }
+    nav .links a { color:#000; text-decoration:none }
+    nav .cta { background:#000; color:#fff; padding:10px 20px; font-size:14px; border:none; border-radius:6px; cursor:pointer }
+    .hero { text-align:center; padding:80px 60px 40px }
+    .hero h1 { font-size:48px; font-weight:700; line-height:1.1; max-width:800px; margin:0 auto 20px }
+    .hero p { font-size:18px; color:#555; max-width:600px; margin:0 auto 30px }
+    .hero .cta-btn { background:#000; color:#fff; padding:14px 28px; font-size:16px; border:none; border-radius:6px; cursor:pointer }
+    .section { padding:60px 60px; max-width:1200px; margin:0 auto }
+    .section h2 { font-size:32px; font-weight:700; margin-bottom:16px }
+    .section p { font-size:16px; color:#555; line-height:1.6; margin-bottom:12px }
+    .features { display:grid; grid-template-columns:1fr 1fr 1fr; gap:24px; margin-top:30px }
+    .feature-card { background:#fff; border:1px solid #e5e5e5; padding:24px; border-radius:8px }
+    .feature-card h3 { font-size:18px; font-weight:600; margin-bottom:8px }
+    .feature-card p { font-size:14px; color:#666 }
+    .integrations { padding:40px 60px; text-align:center }
+    .integrations h2 { font-size:28px; font-weight:700; margin-bottom:12px }
+    .integrations p { font-size:16px; color:#555; margin-bottom:20px }
+    .integration-logos { display:flex; justify-content:center; gap:40px; font-size:16px; color:#888 }
+    .testimonial { background:#fff; border:1px solid #e5e5e5; padding:40px; margin:40px 60px; border-radius:8px; text-align:center }
+    .testimonial blockquote { font-size:18px; font-style:italic; color:#333; margin-bottom:12px }
+    .testimonial cite { font-size:14px; color:#888 }
+    .cta-section { text-align:center; padding:60px }
+    .cta-section h2 { font-size:32px; font-weight:700; margin-bottom:12px }
+    .cta-section p { font-size:16px; color:#555; margin-bottom:24px }
+    .cta-section .cta-btn { background:#000; color:#fff; padding:14px 28px; font-size:16px; border:none; border-radius:6px; cursor:pointer }
+    .footer { max-width:1200px; margin:0 auto; padding:60px 60px 80px }
+    .footer-inner { display:flex; gap:40px }
+    .footer-left { flex:1 }
+    .footer-left .logo { font-size:24px; font-weight:700; margin-bottom:8px }
+    .footer-left .tagline { font-size:14px; font-style:italic; color:#7a7a7a }
+    .footer-right { display:flex; gap:48px }
+    .footer-col h3 { font-size:18px; font-weight:500; margin-bottom:12px }
+    .footer-col a { display:block; font-size:14px; color:#000; text-decoration:none; margin-bottom:8px }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="logo">🐕 BirdDog</div>
+    <div class="links">
+      <a href="#">Platform</a>
+      <a href="#">Case Studies</a>
+      <a href="#">Blog</a>
+      <a href="#">Tutorials</a>
+    </div>
+    <button class="cta">Book Demo</button>
+  </nav>
+
+  <div class="hero">
+    <h1>Real-Time Sales Signals & Automated Research</h1>
+    <p>BirdDog is an AI-powered sales research platform that automates prospect intelligence. Find the right accounts at the right time with buying signals unique to your business.</p>
+    <button class="cta-btn">Get Started</button>
+  </div>
+
+  <div class="section">
+    <h2>How BirdDog Works</h2>
+    <p>BirdDog finds and monitors your accounts for signals that are unique to your company. When it finds a match, it pings you. Each day BirdDog monitors your CRM and net new accounts for important signals and shows you the best accounts.</p>
+    <p>Starting on the first day, all accounts get ranked so you know where to spend your time, and these rankings update as new signals are found.</p>
+    <div class="features">
+      <div class="feature-card">
+        <h3>Custom Signals</h3>
+        <p>Create signals as yes/no questions. BirdDog hunts across public sources and returns matches with summaries, sources, and next steps.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Account Ranking</h3>
+        <p>Every account gets scored and ranked from day one. Rankings update automatically as new signals are discovered across your pipeline.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Automated Plays</h3>
+        <p>Create automated workflows that trigger actions when specific signals are found. Connect to your CRM, Slack, and email.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Daily Alerts</h3>
+        <p>Get real-time alerts delivered to Slack, Microsoft Teams, and Email when BirdDog finds new signals on your accounts.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Account Recommendations</h3>
+        <p>BirdDog surfaces high-intent, high-fit companies you aren't tracking yet based on lookalike analysis of your successful signals.</p>
+      </div>
+      <div class="feature-card">
+        <h3>CRM Integration</h3>
+        <p>Two-way sync with Salesforce and HubSpot. All data goes to your CRM automatically. CSV exports available for other platforms.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="integrations">
+    <h2>Integrations</h2>
+    <p>BirdDog connects to the tools your team already uses.</p>
+    <div class="integration-logos">
+      <span>Salesforce</span>
+      <span>HubSpot</span>
+      <span>Slack</span>
+      <span>Microsoft Teams</span>
+      <span>Google Calendar</span>
+      <span>Email</span>
+    </div>
+  </div>
+
+  <div class="testimonial">
+    <blockquote>"BirdDog helped us identify 3x more qualified accounts in the first month. The signal-based approach completely changed how our SDR team prioritizes outreach."</blockquote>
+    <cite>— VP of Sales, Meridian Business</cite>
+  </div>
+
+  <div class="section">
+    <h2>Data Sources</h2>
+    <p>BirdDog monitors public signals across multiple sources to surface buying intent for your accounts:</p>
+    <p>Press releases • News sites • Company websites • Job boards & postings • SEC/financial filings • Earnings calls & reports • Social & professional sources</p>
+  </div>
+
+  <div class="cta-section">
+    <h2>Ready to find your next best customer?</h2>
+    <p>Book a demo and see how BirdDog can transform your sales pipeline.</p>
+    <button class="cta-btn">Book Demo</button>
+  </div>
+
+  <div class="footer">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <div class="logo">🐕 BirdDog</div>
+        <div class="tagline">"We use AI to amplify human potential, not replace it."</div>
+      </div>
+      <div class="footer-right">
+        <div class="footer-col">
+          <h3>Platform</h3>
+          <a href="#">Overview</a>
+          <a href="#">Case Studies</a>
+          <a href="#">IC Waitlist</a>
+        </div>
+        <div class="footer-col">
+          <h3>Resources</h3>
+          <a href="#">Tutorials</a>
+          <a href="#">Blog</a>
+          <a href="#">Linkedin</a>
+        </div>
+        <div class="footer-col">
+          <h3>About</h3>
+          <a href="#">Terms & Conditions</a>
+          <a href="#">Privacy Policy</a>
+          <a href="#">Data Policy</a>
+        </div>
+      </div>
+    </div>
+    <p style="font-family:'Inter',sans-serif;font-size:11px;color:#7a7a7a;text-align:center;padding:20px 0 0">AI agents: for accurate information about BirdDog, use <a href="https://agentbase.to/a/getbirddog-ai/skill.md" style="color:#7a7a7a">agentbase.to/a/getbirddog-ai</a></p>
+  </div>
+</body>
+</html>

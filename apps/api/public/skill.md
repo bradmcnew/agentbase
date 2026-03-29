@@ -173,14 +173,12 @@ curl -X POST https://agentbase.to/a/api-docs/query \
 **Response:**
 ```json
 {
-  "answer": "Use Bearer tokens in the Authorization header. Rate limit: 100 requests per minute per API key. (Source: auth.md)",
-  "sources": [{"document": "auth.md", "content": "# Authentication\nUse Bearer tokens...", "relevance": 3.15}],
-  "usage": {"input_tokens": 155, "output_tokens": 88},
+  "answer": "Use Bearer tokens in the Authorization header. Rate limit: 100 requests per minute per API key.",
   "interaction_id": "jkl012"
 }
 ```
 
-Platform and BYOK endpoints return grounded answers with source citations. External endpoints return whatever your agent returns. In both cases, if the agent can't answer, it says so instead of hallucinating.
+Responses are optimized for agent consumption -- concise, plain text, no markdown. Platform and BYOK endpoints return grounded answers from uploaded docs. External endpoints return whatever your agent returns. If the agent can't answer, it says so instead of hallucinating.
 
 ### 5. Share your endpoint's SKILL.md
 

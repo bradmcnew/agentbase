@@ -3,8 +3,6 @@
  * These are what CONSUMER agents read to learn how to query an endpoint.
  */
 
-import { ENDPOINT_MODE } from '../types'
-
 interface EndpointConfig {
   slug: string
   name: string
@@ -12,7 +10,6 @@ interface EndpointConfig {
   capabilities: string[]
   baseUrl: string
   endpointId: string
-  mode?: string
   customDomain?: string | null
 }
 
@@ -21,9 +18,8 @@ export function generateSkillMd(config: EndpointConfig): string {
     ? config.capabilities.map(c => `- ${c}`).join('\n')
     : '- answer_questions'
 
-  const desc = config.description || `Knowledge base endpoint for ${config.name}. Query via REST API with semantic search. Returns answers grounded in uploaded documents.`
+  const desc = config.description || `Agent endpoint for ${config.name}. Query via REST API.`
 
-  // Custom domain endpoints use simplified URLs; default uses /a/{slug}/ path
   const hasCustomDomain = !!config.customDomain
   const skillBaseUrl = hasCustomDomain ? `https://${config.customDomain}` : config.baseUrl
   const queryPath = hasCustomDomain ? `${skillBaseUrl}/query` : `${config.baseUrl}/a/${config.slug}/query`
@@ -65,22 +61,20 @@ No API key required. Just send your query.
 **Fields:**
 - \`query\` (required) — Your question. Max 5,000 characters.
 - \`context\` (optional) — Additional context to improve the answer.
-- \`max_sources\` (optional) — Number of source documents to return (1-10, default 3).
+- \`conversation_id\` (optional) — Continue a previous conversation.
 
 **Response:**
 \`\`\`json
 {
-  "answer": "The answer, grounded in the knowledge base with source citations.",
-  "sources": [
-    {"document": "api-docs.md", "content": "relevant excerpt...", "relevance": 3.15}
-  ],
-  "usage": {"input_tokens": 155, "output_tokens": 88},
-  "interaction_id": "abc123"
+  "answer": "The answer to your question.",
+  "conversation_id": "conv_xyz",
+  "confidence": "confident"
 }
 \`\`\`
 
-If the answer is not in the knowledge base, the response says so instead of hallucinating.
-${config.mode === ENDPOINT_MODE.EXTERNAL ? '\nThis endpoint is powered by the company\'s own agent.\n' : ''}
+- \`confidence\` — how much to trust the response: \`confident\`, \`review\`, or \`not_found\`
+- \`conversation_id\` — pass this back in your next query to continue the conversation
+
 ## Capabilities
 
 ${caps}
@@ -88,12 +82,12 @@ ${caps}
 ## Constraints
 
 - Rate limit: 2 requests per 10 seconds per IP
-- Max query length: 5,000 characters${config.mode !== ENDPOINT_MODE.EXTERNAL ? '\n- Answers are grounded in uploaded documents only\n- Source citations link back to the original document filename' : ''}
+- Max query length: 5,000 characters
 `
 }
 
 export function generateLlmsTxt(config: EndpointConfig): string {
-  const desc = config.description || `Knowledge base for ${config.name}.`
+  const desc = config.description || `Agent endpoint for ${config.name}.`
   const hasCustomDomain = !!config.customDomain
   const skillMdUrl = hasCustomDomain ? `https://${config.customDomain}/skill.md` : `${config.baseUrl}/a/${config.slug}/skill.md`
   const queryUrl = hasCustomDomain ? `https://${config.customDomain}/query` : `${config.baseUrl}/a/${config.slug}/query`
@@ -104,7 +98,7 @@ export function generateLlmsTxt(config: EndpointConfig): string {
 
 ## Docs
 
-- [SKILL.md](${skillMdUrl}): How to query this knowledge base
+- [SKILL.md](${skillMdUrl}): How to query this agent endpoint
 
 ## API
 
