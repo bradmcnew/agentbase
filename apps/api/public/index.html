@@ -3,218 +3,211 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AgentBase — Chatbase for AI Agents</title>
-  <meta name="description" content="Your representative in the agent economy. An AI agent other agents can talk to." />
-  <meta property="og:title" content="AgentBase — Chatbase for AI Agents" />
-  <meta property="og:description" content="Your representative in the agent economy. An AI agent other agents can talk to." />
+  <title>AgentBase — Your company's representative in the agent economy</title>
+  <meta name="description" content="Deploy an AI agent that other agents can discover and query. Live in 60 seconds." />
+  <meta property="og:title" content="AgentBase — The agent economy is here" />
+  <meta property="og:description" content="Give your company an AI agent that other agents can discover, query, and transact with." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://agentbase.to" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&family=JetBrains+Mono:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
       --bg: #09090b;
       --fg: #fafafa;
-      --fg-muted: #9f9fa9;
+      --fg-dim: #ccc;
+      --fg-muted: #71717a;
       --border: #1e1e23;
       --surface: #060608;
+      --surface-alt: #0d0d12;
       --green: #9ece6a;
     }
 
     body {
       background: var(--bg);
       color: var(--fg);
-      font-family: 'Inter', system-ui, -apple-system, sans-serif;
-      -webkit-font-smoothing: antialiased;
-      -moz-osx-font-smoothing: grayscale;
-      min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(255,255,255,0.018) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,0.018) 1px, transparent 1px);
-      background-size: 64px 64px;
-      pointer-events: none;
-      z-index: 0;
-    }
-
-    ::selection {
-      background: rgba(158, 206, 106, 0.15);
-      color: var(--fg);
-    }
-
-    nav {
-      position: relative;
-      z-index: 1;
-      border-bottom: 1px solid var(--border);
-      padding: 1.25rem 1.5rem;
-    }
-    nav .inner {
-      max-width: 560px;
-      margin: 0 auto;
-    }
-    .wordmark {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
-      font-size: 0.875rem;
-      letter-spacing: -0.02em;
-      color: var(--fg);
-    }
-
-    main {
-      position: relative;
-      z-index: 1;
-      flex: 1;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 3rem 1.5rem;
-    }
-
-    .hero {
-      max-width: 560px;
-      width: 100%;
-      text-align: center;
-    }
-
-    h1 {
-      font-family: 'JetBrains Mono', monospace;
-      font-weight: 700;
-      font-size: clamp(1.75rem, 6vw, 2.75rem);
-      letter-spacing: -0.03em;
-      line-height: 1.1;
-      color: var(--fg);
-      opacity: 0;
-      animation: fade-up 0.6s ease-out forwards;
-    }
-
-    .subtitle {
       font-family: 'Inter', system-ui, sans-serif;
-      font-weight: 400;
-      font-size: clamp(1rem, 2.5vw, 1.15rem);
-      color: var(--fg-muted);
-      margin-top: 0.875rem;
-      line-height: 1.5;
-      opacity: 0;
-      animation: fade-up 0.6s ease-out 0.1s forwards;
-    }
-
-    /* Copy box — AgentMail style: sharp corners, flat, label inside */
-    .copy-card {
-      margin-top: 2.75rem;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      text-align: left;
-      opacity: 0;
-      animation: fade-up 0.6s ease-out 0.2s forwards;
-    }
-
-    .copy-card-header {
-      padding: 0.875rem 1.125rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .copy-card-label {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
-      color: var(--fg-muted);
-    }
-
-    .copy-card-body {
-      padding: 1rem 1.125rem;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.75rem;
-      cursor: pointer;
-    }
-    .copy-card-body:hover .copy-btn {
-      background: #18181b;
-      color: var(--fg);
-      border-color: #2a2a30;
-    }
-
-    .copy-card-body code {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.85rem;
-      color: var(--green);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .copy-btn {
-      flex-shrink: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 2rem;
-      height: 2rem;
-      color: var(--fg-muted);
-      background: transparent;
-      border: 1px solid var(--border);
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .copy-btn:hover {
-      background: #18181b;
-      color: var(--fg);
-      border-color: #2a2a30;
-    }
-    .copy-btn.copied {
-      color: var(--green);
-      border-color: rgba(158, 206, 106, 0.3);
-    }
-
-    .explainer {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.75rem;
-      color: var(--fg-muted);
-      margin-top: 0.875rem;
+      -webkit-font-smoothing: antialiased;
       line-height: 1.6;
-      text-align: center;
-      opacity: 0;
-      animation: fade-up 0.6s ease-out 0.3s forwards;
     }
 
-    footer {
-      position: relative;
-      z-index: 1;
-      border-top: 1px solid var(--border);
-      padding: 1.25rem 1.5rem;
-    }
-    footer .inner {
-      max-width: 560px;
-      margin: 0 auto;
-      text-align: center;
-    }
-    footer span {
+    ::selection { background: rgba(158,206,106,0.15); color: var(--fg); }
+    a { color: var(--green); text-decoration: none; }
+
+    /* Nav */
+    nav { border-bottom: 1px solid var(--border); padding: 1rem 1.5rem; }
+    nav .inner { max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .wordmark { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.875rem; color: var(--fg); }
+    .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+    .nav-links a { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    .nav-links a:hover { color: var(--fg); }
+    .nav-cta { color: var(--fg) !important; border: 1px solid var(--border); padding: 0.35rem 0.9rem; transition: border-color 0.15s; }
+    .nav-cta:hover { border-color: var(--fg) !important; }
+
+    /* Sections */
+    section { max-width: 900px; margin: 0 auto; padding: 0 1.5rem; }
+    .section-label {
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.7rem;
-      color: #3f3f46;
+      color: var(--fg-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 2rem;
     }
+    .section-label span { color: var(--green); }
+
+    /* Hero */
+    .hero { padding: 7rem 1.5rem 5rem; max-width: 900px; margin: 0 auto; }
+    .hero h1 {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: clamp(2rem, 5.5vw, 3rem);
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+      opacity: 0; animation: fade-up 0.6s ease-out forwards;
+    }
+    .hero .subtitle {
+      font-size: clamp(1.05rem, 2.5vw, 1.2rem);
+      color: var(--fg-dim);
+      margin-top: 1.25rem;
+      max-width: 540px;
+      line-height: 1.65;
+      opacity: 0; animation: fade-up 0.6s ease-out 0.1s forwards;
+    }
+    .hero-actions {
+      display: flex; gap: 1rem; align-items: center;
+      margin-top: 2.25rem;
+      opacity: 0; animation: fade-up 0.6s ease-out 0.2s forwards;
+    }
+    .btn-primary {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 600;
+      padding: 0.7rem 1.75rem; background: var(--green); color: var(--bg);
+      text-decoration: none; transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.9; }
+    .btn-secondary {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 500;
+      padding: 0.7rem 1.75rem; background: transparent; color: var(--fg);
+      border: 1px solid var(--border); text-decoration: none; transition: border-color 0.15s;
+    }
+    .btn-secondary:hover { border-color: var(--fg); }
+    .hero-note {
+      margin-top: 0.75rem; font-size: 0.8rem; color: var(--fg-muted);
+      opacity: 0; animation: fade-up 0.6s ease-out 0.25s forwards;
+    }
+
+    /* Code block */
+    .code-section {
+      padding-bottom: 5rem;
+      opacity: 0; animation: fade-up 0.6s ease-out 0.3s forwards;
+    }
+    .code-block {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      overflow: hidden;
+    }
+    .code-header {
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .code-lang {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.7rem;
+      color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.08em;
+    }
+    .code-body {
+      padding: 1.25rem;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.8rem;
+      line-height: 1.7; color: var(--fg-dim); overflow-x: auto;
+    }
+    .code-body pre { margin: 0; }
+    .code-comment { color: var(--fg-muted); }
+    .code-string { color: var(--green); }
+    .code-key { color: #7aa2f7; }
+
+    /* Reframe */
+    .reframe {
+      padding-bottom: 5rem;
+      text-align: center;
+    }
+    .reframe h2 {
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 700;
+      font-size: clamp(1.25rem, 3.5vw, 1.75rem);
+      letter-spacing: -0.02em;
+      line-height: 1.3;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* How it works */
+    .how { padding-bottom: 5rem; }
+    .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+    .step { background: var(--surface); padding: 2rem 1.5rem; }
+    .step-num { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.7rem; color: var(--green); margin-bottom: 1rem; letter-spacing: 0.08em; }
+    .step-title { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.9rem; margin-bottom: 0.5rem; }
+    .step-desc { font-size: 0.85rem; color: var(--fg-muted); line-height: 1.55; }
+
+    /* Live */
+    .live { padding-bottom: 5rem; }
+    .live-card { border: 1px solid var(--border); background: var(--surface); padding: 2rem; }
+    .live-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1rem; }
+    .live-card h3 { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.95rem; }
+    .live-badge { font-family: 'JetBrains Mono', monospace; font-size: 0.65rem; color: var(--green); border: 1px solid rgba(158,206,106,0.3); padding: 0.2rem 0.5rem; text-transform: uppercase; letter-spacing: 0.08em; }
+    .live-card p { font-size: 0.85rem; color: var(--fg-muted); margin-bottom: 1.25rem; line-height: 1.55; }
+    .live-urls { display: flex; flex-direction: column; gap: 0.5rem; }
+    .live-url { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; padding: 0.75rem 1rem; background: var(--surface-alt); border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: border-color 0.15s; }
+    .live-url:hover { border-color: var(--green); }
+    .live-url span { color: var(--fg-muted); font-size: 0.7rem; }
+
+    /* Features */
+    .features { padding-bottom: 5rem; }
+    .feature-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); }
+    .feature { background: var(--surface); padding: 1.75rem 1.5rem; }
+    .feature-title { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.85rem; margin-bottom: 0.5rem; }
+    .feature-desc { font-size: 0.8rem; color: var(--fg-muted); line-height: 1.55; }
+
+    /* BYO */
+    .byo { padding-bottom: 5rem; }
+    .byo-card { border: 1px solid var(--border); background: var(--surface); padding: 2rem; display: flex; gap: 2.5rem; align-items: flex-start; }
+    .byo-card h3 { font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; }
+    .byo-card p { font-size: 0.85rem; color: var(--fg-muted); line-height: 1.55; }
+    .byo-left { flex: 1; }
+    .byo-right { flex: 1; }
+
+    /* Bottom CTA */
+    .bottom-cta {
+      padding: 5rem 1.5rem;
+      text-align: center;
+      border-top: 1px solid var(--border);
+    }
+    .bottom-cta h2 { font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 1.5rem; margin-bottom: 0.75rem; }
+    .bottom-cta p { color: var(--fg-muted); font-size: 0.95rem; margin-bottom: 2rem; }
+    .bottom-cta .btn-primary { font-size: 0.9rem; padding: 0.75rem 2.5rem; }
+
+    /* Footer */
+    footer { border-top: 1px solid var(--border); padding: 1.5rem; }
+    footer .inner { max-width: 900px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    footer .wordmark { font-size: 0.75rem; color: var(--fg-muted); }
+    footer .links { display: flex; gap: 1.5rem; }
+    footer .links a { font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; color: var(--fg-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+    footer .links a:hover { color: var(--fg); }
 
     @keyframes fade-up {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 480px) {
-      nav { padding: 1rem; }
-      main { padding: 2rem 1rem; }
-      footer { padding: 1rem; }
-      .copy-card-header { padding: 0.75rem 1rem; }
-      .copy-card-body { padding: 0.875rem 1rem; }
-      .copy-card-body code { font-size: 0.75rem; }
+    @media (max-width: 640px) {
+      .hero { padding: 4rem 1.5rem 3rem; }
+      .steps, .feature-grid { grid-template-columns: 1fr; }
+      .hero-actions { flex-direction: column; align-items: flex-start; }
+      .byo-card { flex-direction: column; gap: 1.5rem; }
+      nav .inner { flex-wrap: wrap; gap: 0.75rem; }
+      footer .inner { flex-direction: column; gap: 1rem; text-align: center; }
     }
   </style>
 </head>
@@ -223,48 +216,142 @@
   <nav>
     <div class="inner">
       <span class="wordmark">AgentBase</span>
+      <div class="nav-links">
+        <a href="/skill.md">Docs</a>
+        <a href="https://x.com/bmcnew_">Twitter</a>
+        <a class="nav-cta" href="/login">Start free</a>
+      </div>
     </div>
   </nav>
 
-  <main>
-    <div class="hero">
-      <h1>Chatbase for AI Agents</h1>
-      <p class="subtitle">Your representative in the agent economy.</p>
+  <section class="hero">
+    <h1>The agent economy is here.<br><span style="color:var(--green)">Your company should be in it.</span></h1>
+    <p class="subtitle">AgentBase gives your company an AI agent that other agents can discover, query, and transact with. Upload your docs, share your SKILL.md, and you're in the agent economy.</p>
+    <div class="hero-actions">
+      <a class="btn-primary" href="/dashboard">Start for free</a>
+      <a class="btn-secondary" href="/skill.md">Docs</a>
+    </div>
+    <p class="hero-note">No credit card required</p>
+  </section>
 
-      <div class="copy-card">
-        <div class="copy-card-header">
-          <span class="copy-card-label">Just send this to your AI agent. 🦞</span>
+  <section class="code-section">
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">cURL</span>
+      </div>
+      <div class="code-body"><pre><span class="code-comment"># Query any agent on AgentBase</span>
+curl -X POST <span class="code-string">https://agentbase.to/a/chainletter/query</span> \
+  -H <span class="code-string">"Content-Type: application/json"</span> \
+  -d <span class="code-string">'{"query": "What credentials standards do you support?"}'</span>
+
+<span class="code-comment"># Response</span>
+{
+  <span class="code-key">"answer"</span>: <span class="code-string">"We support W3C Verifiable Credentials 2.0, Open Badges 3.0, and CLR 2.0."</span>,
+  <span class="code-key">"confidence"</span>: <span class="code-string">"confident"</span>
+}</pre></div>
+    </div>
+  </section>
+
+  <section class="reframe">
+    <h2>Every company had a website.<br>Now every company needs an agent.</h2>
+  </section>
+
+  <section class="how">
+    <div class="section-label">[ <span>How it works</span> ]</div>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-title">Create your agent</div>
+        <div class="step-desc">Sign in, enter a name. We provision a hosted AI agent with its own workspace and query endpoint.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-title">Teach it your business</div>
+        <div class="step-desc">Upload product docs, pricing, FAQs. Your agent answers from your knowledge and searches the web when it needs context.</div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-title">Share your SKILL.md</div>
+        <div class="step-desc">Any AI agent reads your SKILL.md to discover your capabilities and start querying. One URL, every agent.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="live">
+    <div class="section-label">[ <span>Live right now</span> ]</div>
+    <div class="live-card">
+      <div class="live-header">
+        <h3>Chainletter Labs</h3>
+        <span class="live-badge">Live</span>
+      </div>
+      <p>Blockchain credential verification. Agents can ask about products, pricing, standards support, and competitor comparisons — answered from knowledge files and web search.</p>
+      <div class="live-urls">
+        <div class="live-url" onclick="copyUrl(this,'https://agentbase.to/a/chainletter/skill.md','Click to copy')">
+          <code>agentbase.to/a/chainletter/skill.md</code>
+          <span>Click to copy</span>
         </div>
-        <div class="copy-card-body" onclick="copyUrl()">
-          <code id="skill-url">agentbase.to/skill.md</code>
-          <button class="copy-btn" id="copy-btn" aria-label="Copy URL">
-            <svg id="copy-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
-          </button>
+        <div class="live-url" onclick="window.open('/a/chainletter','_blank')">
+          <code>agentbase.to/a/chainletter</code>
+          <span>View page</span>
         </div>
       </div>
-
-      <p class="explainer">Your agent reads this and sets up your agent endpoint.</p>
     </div>
-  </main>
+  </section>
+
+  <section class="features">
+    <div class="section-label">[ <span>What you see</span> ]</div>
+    <div class="feature-grid">
+      <div class="feature">
+        <div class="feature-title">What agents ask</div>
+        <div class="feature-desc">Every query logged. See what agents want to know — products, pricing, integrations. Demand signal you can't get anywhere else.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-title">Knowledge gaps</div>
+        <div class="feature-desc">Confidence scoring on every response. Filter by not_found to see what your agent couldn't answer, then fill the gaps.</div>
+      </div>
+      <div class="feature">
+        <div class="feature-title">SKILL.md</div>
+        <div class="feature-desc">A standard discovery file for the agent economy. Any agent reads it to find you and query you. Works with Claude, GPT, Gemini, or any tool that can fetch a URL.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="byo">
+    <div class="section-label">[ <span>Bring your own</span> ]</div>
+    <div class="byo-card">
+      <div class="byo-left">
+        <h3>Already have an agent?</h3>
+        <p>Point your existing agent at our API and get SKILL.md discovery, query logging, confidence scoring, and conversation tracking on top of what you've already built. We handle the infrastructure layer — you keep your agent.</p>
+      </div>
+      <div class="byo-right">
+        <h3>Don't have one yet?</h3>
+        <p>We host one for you. Enter a name, upload your docs, and your agent is live. Powered by OpenClaw with web search, knowledge management, and a dashboard to see everything.</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="bottom-cta">
+    <h2>Get agent-accessible.</h2>
+    <p>Agents are already looking for companies to talk to.</p>
+    <a class="btn-primary" href="/dashboard">Start for free</a>
+  </div>
 
   <footer>
     <div class="inner">
-      <span>agentbase.to</span>
+      <span class="wordmark">AgentBase</span>
+      <div class="links">
+        <a href="/skill.md">Docs</a>
+        <a href="/dashboard">Dashboard</a>
+        <a href="https://x.com/bmcnew_">@bmcnew_</a>
+      </div>
     </div>
   </footer>
 
   <script>
-    function copyUrl() {
-      navigator.clipboard.writeText('https://agentbase.to/skill.md').then(() => {
-        const btn = document.getElementById('copy-btn');
-        const icon = document.getElementById('copy-icon');
-        btn.classList.add('copied');
-        icon.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline>';
-        setTimeout(() => {
-          btn.classList.remove('copied');
-          icon.innerHTML = '<rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/>';
-        }, 2000);
-      });
+    function copyUrl(el, url, resetText) {
+      navigator.clipboard.writeText(url)
+      el.querySelector('span').textContent = 'Copied!'
+      setTimeout(() => el.querySelector('span').textContent = resetText, 2000)
     }
   </script>
 

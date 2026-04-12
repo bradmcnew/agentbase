@@ -10,14 +10,9 @@ import type { AuthContext } from '../types'
 export type EndpointRow = typeof endpoints.$inferSelect
 
 /**
- * Middleware that resolves an endpoint by accountId + slug.
+ * Middleware that resolves an endpoint by userId + slug.
  * Requires auth middleware to have run first (reads auth from context).
  * Sets the full endpoint row on context as 'endpoint'.
- *
- * Usage:
- *   app.use('*', authMiddleware)
- *   app.use('*', resolveEndpoint)
- *   app.get('/', (c) => { const ep = c.get('endpoint') })
  */
 export async function resolveEndpoint(
   c: Context<{ Variables: { auth: AuthContext; db: DrizzleD1Database; endpoint: EndpointRow } }>,
@@ -33,7 +28,7 @@ export async function resolveEndpoint(
   const [endpoint] = await db
     .select()
     .from(endpoints)
-    .where(and(eq(endpoints.accountId, auth.accountId), eq(endpoints.slug, slug), ne(endpoints.status, ENDPOINT_STATUS.ARCHIVED)))
+    .where(and(eq(endpoints.userId, auth.userId), eq(endpoints.slug, slug), ne(endpoints.status, ENDPOINT_STATUS.ARCHIVED)))
     .limit(1)
 
   if (!endpoint) {

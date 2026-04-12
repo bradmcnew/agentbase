@@ -7,18 +7,20 @@
  */
 
 import { Context } from 'hono'
-import { eq, asc } from 'drizzle-orm'
+import { eq, desc } from 'drizzle-orm'
 import { interactions } from '../db/schema'
 import { generateId } from '../utils/id'
 import { errorResponse, serviceError, ErrorCode } from '../utils/errors'
 import { parseBody } from '../utils/validate'
 import { signPayload } from '../utils/hmac'
 import { decrypt } from '../utils/encrypt'
-import { QueryEndpointSchema, ENDPOINT_STATUS, PLAN_LIMITS } from '../types'
+import { QueryEndpointSchema, ENDPOINT_STATUS, PLAN_LIMITS, CONFIDENCE } from '../types'
 import type { Env } from '../types'
 import type { EndpointRow } from '../middleware/resolve-endpoint'
 
-const CONFIDENCE_TAG_RE = /\n?\[CONFIDENCE:(confident|review|not_found)\|SOURCES:([^\]]*)\]\s*$/
+const CONFIDENCE_TAG_RE = new RegExp(
+  `\\n?\\[CONFIDENCE:(${CONFIDENCE.CONFIDENT}|${CONFIDENCE.REVIEW}|${CONFIDENCE.NOT_FOUND})\\|SOURCES:([^\\]]*)\\]\\s*$`
+)
 
 function parseConfidenceTag(raw: string): { answer: string; confidence: string | null; sources: string | null } {
   const match = raw.match(CONFIDENCE_TAG_RE)
@@ -27,7 +29,7 @@ function parseConfidenceTag(raw: string): { answer: string; confidence: string |
   return { answer: raw.slice(0, match.index!).trimEnd(), confidence: match[1], sources }
 }
 
-const WEBHOOK_TIMEOUT_MS = 30_000
+const WEBHOOK_TIMEOUT_MS = 60_000
 const QUOTA_WINDOW_MS = 24 * 60 * 60 * 1000 // 24 hours
 const MAX_HISTORY_TURNS = 5
 const MAX_HISTORY_CHARS = 8000
@@ -92,8 +94,9 @@ export async function handleQuery(c: Context, ep: EndpointRow): Promise<Response
         ? db.select({ query: interactions.query, response: interactions.response })
             .from(interactions)
             .where(eq(interactions.conversationId, data.conversation_id))
-            .orderBy(asc(interactions.createdAt))
+            .orderBy(desc(interactions.createdAt))
             .limit(MAX_HISTORY_TURNS)
+            .then((rows: Array<{ query: string; response: string }>) => rows.reverse())
         : Promise.resolve([]),
       ep.externalApiKey ? decrypt(ep.externalApiKey, env.ENCRYPTION_SECRET) : null,
       ep.webhookSecret ? decrypt(ep.webhookSecret, env.ENCRYPTION_SECRET) : null,
@@ -117,9 +120,6 @@ export async function handleQuery(c: Context, ep: EndpointRow): Promise<Response
       messages,
     })
 
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), WEBHOOK_TIMEOUT_MS)
-
     const headers: Record<string, string> = { 'Content-Type': 'application/json' }
     if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`
     if (webhookSecretKey) {
@@ -137,9 +137,9 @@ export async function handleQuery(c: Context, ep: EndpointRow): Promise<Response
 
     try {
       const res = await fetch(ep.webhookUrl, {
-        method: 'POST', headers, body: webhookBody, signal: controller.signal,
+        method: 'POST', headers, body: webhookBody,
+        signal: AbortSignal.timeout(WEBHOOK_TIMEOUT_MS),
       })
-      clearTimeout(timeout)
 
       if (!res.ok) {
         const body = (await res.text()).slice(0, 200)
@@ -159,9 +159,8 @@ export async function handleQuery(c: Context, ep: EndpointRow): Promise<Response
       promptTokens = webhookData.usage?.prompt_tokens || 0
       completionTokens = webhookData.usage?.completion_tokens || 0
     } catch (err) {
-      clearTimeout(timeout)
-      if (err instanceof Error && err.name === 'AbortError') {
-        throw new Error('Webhook timed out after 30 seconds')
+      if (err instanceof Error && err.name === 'TimeoutError') {
+        throw new Error('Webhook timed out after 60 seconds')
       }
       throw err
     }

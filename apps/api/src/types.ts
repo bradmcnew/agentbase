@@ -14,6 +14,16 @@ export const ENDPOINT_MODE = {
   EXTERNAL: 'external',
 } as const
 
+// --- Confidence levels ---
+
+export const CONFIDENCE = {
+  CONFIDENT: 'confident',
+  REVIEW: 'review',
+  NOT_FOUND: 'not_found',
+} as const
+
+export type Confidence = typeof CONFIDENCE[keyof typeof CONFIDENCE]
+
 // --- Plan limits ---
 
 export const PLAN_LIMITS = {
@@ -64,7 +74,7 @@ export const UpdateEndpointSchema = z.object({
 export const QueryEndpointSchema = z.object({
   query: z.string().min(1).max(5000),
   context: z.string().max(2000).optional(),
-  conversation_id: z.string().max(100).optional(),
+  conversation_id: z.string().max(100).nullable().optional(),
 })
 
 // --- Env bindings ---
@@ -77,13 +87,33 @@ export interface Env {
   UNKEY_API_ID: string
   CF_ZONE_ID: string
   CF_API_TOKEN: string
+  BETTER_AUTH_SECRET: string
+  BETTER_AUTH_URL: string
+  GOOGLE_CLIENT_ID: string
+  GOOGLE_CLIENT_SECRET: string
+  GITHUB_CLIENT_ID: string
+  GITHUB_CLIENT_SECRET: string
+  MICROSOFT_CLIENT_ID: string
+  MICROSOFT_CLIENT_SECRET: string
+  OPENCLAW_PROVISION_URL: string
+  OPENCLAW_PROVISION_SECRET: string
+  OPENCLAW_GATEWAY_URL: string
+  OPENCLAW_GATEWAY_TOKEN: string
 }
 
-// --- Auth context ---
+// --- Auth context (Unkey API key auth for /v1/* routes) ---
 
 export interface AuthContext {
-  accountId: string
+  userId: string
   apiKeyId: string
+}
+
+// --- Dashboard auth context (Better Auth session for /dashboard/* routes) ---
+
+export interface DashboardAuth {
+  userId: string
+  userName: string
+  plan: string
 }
 
 // --- Hono app type with all variables ---
@@ -92,4 +122,5 @@ export interface AppVariables {
   auth: AuthContext
   db: DrizzleD1Database
   endpoint: EndpointRow
+  dashboardAuth: DashboardAuth
 }

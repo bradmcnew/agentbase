@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { eq, and, ne, sql } from 'drizzle-orm'
-import { accounts, endpoints, interactions } from '../db/schema'
+import { user, endpoints, interactions } from '../db/schema'
 import { generateId } from '../utils/id'
 import { generateSkillMd } from '../services/skill-gen'
 import { authMiddleware } from '../middleware/auth'
@@ -24,15 +24,15 @@ app.post('/v1/endpoints', async (c) => {
   const auth = c.get('auth')
   const db = c.get('db')
 
-  // Check endpoint limit based on account plan
-  const [account] = await db.select({ plan: accounts.plan }).from(accounts).where(eq(accounts.id, auth.accountId)).limit(1)
-  const plan = (account?.plan === 'pro' ? 'pro' : 'free') as keyof typeof PLAN_LIMITS
+  // Check endpoint limit based on user plan
+  const [u] = await db.select({ plan: user.plan }).from(user).where(eq(user.id, auth.userId)).limit(1)
+  const plan = (u?.plan === 'pro' ? 'pro' : 'free') as keyof typeof PLAN_LIMITS
   const maxEndpoints = PLAN_LIMITS[plan].maxEndpoints
 
   const [{ count: endpointCount }] = await db
     .select({ count: sql<number>`count(*)` })
     .from(endpoints)
-    .where(and(eq(endpoints.accountId, auth.accountId), ne(endpoints.status, ENDPOINT_STATUS.ARCHIVED)))
+    .where(and(eq(endpoints.userId, auth.userId), ne(endpoints.status, ENDPOINT_STATUS.ARCHIVED)))
 
   if (endpointCount >= maxEndpoints) {
     return errorResponse(c, 429, ErrorCode.QUOTA_EXCEEDED,
@@ -68,7 +68,7 @@ app.post('/v1/endpoints', async (c) => {
   })
 
   await db.insert(endpoints).values({
-    id: endpointId, accountId: auth.accountId, slug: data.slug,
+    id: endpointId, userId: auth.userId, slug: data.slug,
     name: data.name, description: data.description || null,
     mode,
     webhookUrl: data.webhook_url,
@@ -122,7 +122,7 @@ app.get('/v1/endpoints', async (c) => {
       description: endpoints.description, status: endpoints.status, createdAt: endpoints.createdAt,
     })
     .from(endpoints)
-    .where(eq(endpoints.accountId, auth.accountId))
+    .where(eq(endpoints.userId, auth.userId))
 
   return c.json({ endpoints: results })
 })

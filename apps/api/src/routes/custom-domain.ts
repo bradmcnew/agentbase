@@ -90,7 +90,7 @@ async function verifyOwnership(c: any, next: any) {
   const ep = c.get('endpoint')
   const auth = c.get('auth')
   if (!ep || !auth) return
-  if (ep.accountId !== auth.accountId) {
+  if (ep.userId !== auth.userId) {
     return errorResponse(c, 403, ErrorCode.UNAUTHORIZED, 'Not authorized for this endpoint')
   }
   return next()

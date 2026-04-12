@@ -28,12 +28,12 @@ function extractKey(c: Context): string | Response {
 
 /** Map Unkey verify response to our auth context. Returns error Response or null on success. */
 function setAuthContext(c: Context<{ Bindings: Env; Variables: AppVariables }>, data: any): Response | null {
-  const accountId = data.identity?.externalId
-  if (!accountId) {
+  const userId = data.identity?.externalId
+  if (!userId) {
     console.error('Unkey key missing identity.externalId:', data.keyId)
     return errorResponse(c, 401, ErrorCode.UNAUTHORIZED, 'Invalid API key configuration')
   }
-  c.set('auth', { accountId, apiKeyId: data.keyId! })
+  c.set('auth', { userId, apiKeyId: data.keyId! })
   return null
 }
 

@@ -1,5 +1,5 @@
 import { Hono } from 'hono'
-import { accounts } from '../db/schema'
+import { user } from '../db/schema'
 import { getUnkeyClient } from '../middleware/auth'
 import { generateId } from '../utils/id'
 import { parseBody } from '../utils/validate'
@@ -48,24 +48,28 @@ app.post('/v1/accounts', async (c) => {
   if (data instanceof Response) return data
 
   const db = c.get('db')
-  const accountId = generateId()
+  const userId = generateId()
+  const now = new Date()
 
-  // Create Unkey key first — if this fails, no orphaned account row in D1
+  // Create Unkey key first — if this fails, no orphaned user row in D1
   try {
     const unkey = getUnkeyClient(c.env.UNKEY_ROOT_KEY)
     const response = await unkey.keys.createKey({
       apiId: c.env.UNKEY_API_ID,
-      externalId: accountId,
+      externalId: userId,
       name: `${data.name} default key`,
       meta: { plan: 'free' },
       ratelimits: [{ name: 'api_requests', limit: 60, duration: 60_000 }],
       credits: { remaining: 1000, refill: { interval: 'daily', amount: 1000 } },
     })
 
-    await db.insert(accounts).values({ id: accountId, name: data.name, createdBy: 'agent' })
+    await db.insert(user).values({
+      id: userId, name: data.name, email: `api-${userId}@agentbase.to`,
+      emailVerified: false, plan: 'free', createdAt: now, updatedAt: now,
+    })
 
     return c.json({
-      account: { id: accountId, name: data.name, plan: 'free', created_at: new Date().toISOString() },
+      account: { id: userId, name: data.name, plan: 'free', created_at: now.toISOString() },
       api_key: response.data.key,
     }, 201)
   } catch (err) {

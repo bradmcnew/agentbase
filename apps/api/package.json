@@ -12,14 +12,15 @@
   },
   "dependencies": {
     "@unkey/api": "^2.3.1",
-    "drizzle-orm": "^0.39.0",
+    "better-auth": "^1.6.0",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.7.0",
     "unpdf": "^1.4.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250313.0",
-    "drizzle-kit": "^0.30.0",
+    "drizzle-kit": "^0.31.10",
     "typescript": "^5.7.0",
     "wrangler": "^4.0.0"
   }
